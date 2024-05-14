@@ -43,7 +43,7 @@ class YouTubeViewModel: ObservableObject {
     }
     
     var resultsCount: String {
-        get { UserDefaults.standard.string(forKey: "resultsCount") ?? "" }
+        get { UserDefaults.standard.string(forKey: "resultsCount") ?? "10" }
         set { UserDefaults.standard.set(newValue, forKey: "resultsCount") }
     }
     
