@@ -17,14 +17,16 @@ struct VideoPlayerView: View {
         ZStack {
             WebView(url: URL(string: "https://www.youtube.com/embed/\(video.id)")!, isLoading: $isLoading)
             if isLoading {
-                Color.gray.opacity(0.5)
+                Color.black
                 VStack {
                     ProgressView("Loading...")
                         .progressViewStyle(CircularProgressViewStyle(tint: .gray))
                         .scaleEffect(2)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .edgesIgnoringSafeArea(.all) // Add this line
     }
 }
 
