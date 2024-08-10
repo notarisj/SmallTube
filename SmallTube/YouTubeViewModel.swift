@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 enum AlertType: Identifiable {
-    case noResults, apiError, emptyQuery, quotaExceeded
+    case noResults, apiError, emptyQuery, quotaExceeded, saveSuccess
     var id: Int {
         switch self {
         case .noResults:
@@ -20,6 +20,8 @@ enum AlertType: Identifiable {
             return 2
         case .quotaExceeded:
             return 3
+        case .saveSuccess:
+            return 4
         }
     }
 }
@@ -27,6 +29,8 @@ enum AlertType: Identifiable {
 class YouTubeViewModel: ObservableObject {
     @Published var videos = [YouTubeVideo]()
     @Published var currentAlert: AlertType?
+    @AppStorage("savedSearches") var savedSearches: Data = Data()
+    var savedSearchesDict: [UUID: SavedSearch] = [:]
     
     var lastSearches: [String] {
         get {
@@ -102,6 +106,21 @@ class YouTubeViewModel: ObservableObject {
     func deleteSearches(at offsets: IndexSet) {
         lastSearches.remove(atOffsets: offsets)
         lastSearches = lastSearches
+    }
+    
+    func saveCurrentSearch(query: String) {
+        if let savedData = UserDefaults.standard.data(forKey: "savedSearches"),
+           let savedSearches = try? JSONDecoder().decode([UUID: SavedSearch].self, from: savedData) {
+            savedSearchesDict = savedSearches
+        }
+        let newSearch = SavedSearch(id: UUID(), query: query, videos: videos, date: Date())
+        savedSearchesDict[newSearch.id] = newSearch
+        if let encoded = try? JSONEncoder().encode(savedSearchesDict) {
+            UserDefaults.standard.set(encoded, forKey: "savedSearches")
+            DispatchQueue.main.async {
+                self.currentAlert = .saveSuccess
+            }
+        }
     }
 }
 

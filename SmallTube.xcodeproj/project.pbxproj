@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		053CCC532BF55A4F00A69E1A /* SavedSearchDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053CCC522BF55A4F00A69E1A /* SavedSearchDetailView.swift */; };
 		054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */; };
 		054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34AB2BF02E98008E9B18 /* ContentView.swift */; };
 		054F34AE2BF02E9A008E9B18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 054F34AD2BF02E9A008E9B18 /* Assets.xcassets */; };
@@ -16,9 +17,11 @@
 		054F34BC2BF02F01008E9B18 /* YouTubeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */; };
 		054F34BE2BF02F0B008E9B18 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */; };
 		054F34C02BF02F13008E9B18 /* AsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BF2BF02F13008E9B18 /* AsyncImage.swift */; };
+		05EED3242BF4164100D69463 /* SavedResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05EED3232BF4164100D69463 /* SavedResultsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		053CCC522BF55A4F00A69E1A /* SavedSearchDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedSearchDetailView.swift; sourceTree = "<group>"; };
 		054F34A62BF02E98008E9B18 /* SmallTube.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmallTube.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallTubeApp.swift; sourceTree = "<group>"; };
 		054F34AB2BF02E98008E9B18 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -29,6 +32,7 @@
 		054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeViewModel.swift; sourceTree = "<group>"; };
 		054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
 		054F34BF2BF02F13008E9B18 /* AsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncImage.swift; sourceTree = "<group>"; };
+		05EED3232BF4164100D69463 /* SavedResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedResultsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +74,8 @@
 				054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */,
 				054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */,
 				054F34BF2BF02F13008E9B18 /* AsyncImage.swift */,
+				05EED3232BF4164100D69463 /* SavedResultsView.swift */,
+				053CCC522BF55A4F00A69E1A /* SavedSearchDetailView.swift */,
 			);
 			path = SmallTube;
 			sourceTree = "<group>";
@@ -153,12 +159,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				054F34C02BF02F13008E9B18 /* AsyncImage.swift in Sources */,
+				05EED3242BF4164100D69463 /* SavedResultsView.swift in Sources */,
 				054F34B82BF02EE6008E9B18 /* SettingsView.swift in Sources */,
 				054F34BC2BF02F01008E9B18 /* YouTubeViewModel.swift in Sources */,
 				054F34BA2BF02EF0008E9B18 /* YouTubeVideo.swift in Sources */,
 				054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */,
 				054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */,
 				054F34BE2BF02F0B008E9B18 /* VideoPlayerView.swift in Sources */,
+				053CCC532BF55A4F00A69E1A /* SavedSearchDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -304,12 +312,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.notaris.SmallTube;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -333,12 +344,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.notaris.SmallTube;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

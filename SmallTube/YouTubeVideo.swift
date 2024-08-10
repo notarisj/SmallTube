@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct YouTubeVideo: Identifiable, Decodable {
+struct YouTubeVideo: Identifiable, Decodable, Encodable {
     let id: String
     let title: String
     let description: String
@@ -49,6 +49,20 @@ struct YouTubeVideo: Identifiable, Decodable {
         let thumbnailContainer = try snippetContainer.nestedContainer(keyedBy: ThumbnailKeys.self, forKey: .thumbnails)
         let defaultThumbnailContainer = try thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail)
         thumbnailURL = try defaultThumbnailContainer.decode(URL.self, forKey: .url)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        var idContainer = container.nestedContainer(keyedBy: IDKeys.self, forKey: .id)
+        try idContainer.encode(id, forKey: .videoId)
+        
+        var snippetContainer = container.nestedContainer(keyedBy: SnippetKeys.self, forKey: .snippet)
+        try snippetContainer.encode(title, forKey: .title)
+        try snippetContainer.encode(description, forKey: .description)
+        
+        var thumbnailContainer = snippetContainer.nestedContainer(keyedBy: ThumbnailKeys.self, forKey: .thumbnails)
+        var defaultThumbnailContainer = thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail)
+        try defaultThumbnailContainer.encode(thumbnailURL, forKey: .url)
     }
 }
 

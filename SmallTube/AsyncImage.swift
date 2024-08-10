@@ -23,7 +23,7 @@ struct AsyncImage: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 100, height: 100)
         } else {
-            ProgressView() // Show a progress view while the image is loading
+            ProgressView()
         }
     }
 }

@@ -15,7 +15,7 @@ struct VideoPlayerView: View {
     
     var body: some View {
         ZStack {
-            WebView(url: URL(string: "https://www.youtube.com/embed/\(video.id)")!, isLoading: $isLoading)
+            WebView(url: URL(string: "https://cdpn.io/pen/debug/oNPzxKo?v=\(video.id)")!, isLoading: $isLoading)
             if isLoading {
                 Color.black
                 VStack {
@@ -26,7 +26,7 @@ struct VideoPlayerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .edgesIgnoringSafeArea(.all) // Add this line
+        .edgesIgnoringSafeArea(.all)
     }
 }
 
