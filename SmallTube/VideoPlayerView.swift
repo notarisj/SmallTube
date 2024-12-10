@@ -10,7 +10,7 @@ import SwiftUI
 import WebKit
 
 struct VideoPlayerView: View {
-    var video: YouTubeVideo
+    var video: CachedYouTubeVideo // Change from YouTubeVideo to CachedYouTubeVideo
     @State private var isLoading = true
     
     var body: some View {
@@ -26,7 +26,7 @@ struct VideoPlayerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .edgesIgnoringSafeArea(.all) // Add this line
+        .edgesIgnoringSafeArea(.all)
     }
 }
 

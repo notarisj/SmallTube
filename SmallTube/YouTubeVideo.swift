@@ -13,15 +13,12 @@ struct YouTubeVideo: Identifiable, Codable {
     let description: String
     let thumbnailURL: URL
 
-    // Flat keys for cached data
     enum FlatKeys: String, CodingKey {
         case id, title, description, thumbnailURL
     }
 
-    // API-based keys
     enum APIKeys: String, CodingKey {
-        case id
-        case snippet
+        case id, snippet
     }
 
     enum IDKeys: String, CodingKey {
@@ -29,13 +26,12 @@ struct YouTubeVideo: Identifiable, Codable {
     }
 
     enum SnippetKeys: String, CodingKey {
-        case title
-        case description
-        case thumbnails
+        case title, description, thumbnails
     }
 
     enum ThumbnailKeys: String, CodingKey {
         case defaultThumbnail = "default"
+        case medium, high, standard, maxres
     }
 
     enum DefaultThumbnailKeys: String, CodingKey {
@@ -43,39 +39,34 @@ struct YouTubeVideo: Identifiable, Codable {
     }
 
     init(from decoder: Decoder) throws {
-        // First, try decoding using the flat structure (cached data)
-        if let flatContainer = try? decoder.container(keyedBy: FlatKeys.self) {
-            self.id = try flatContainer.decode(String.self, forKey: .id)
-            self.title = try flatContainer.decode(String.self, forKey: .title)
-            self.description = try flatContainer.decode(String.self, forKey: .description)
-            self.thumbnailURL = try flatContainer.decode(URL.self, forKey: .thumbnailURL)
-            return
-        }
-
-        // If flat decoding fails, decode using the API structure
+        // Try decoding for Search Response
         let container = try decoder.container(keyedBy: APIKeys.self)
 
-        // Try decoding id from search-style response first (id.videoId)
-        if let idContainer = try? container.nestedContainer(keyedBy: IDKeys.self, forKey: .id),
-           let videoId = try? idContainer.decode(String.self, forKey: .videoId) {
-            self.id = videoId
+        // Handle `id`
+        if let directId = try? container.decode(String.self, forKey: .id) {
+            self.id = directId
         } else {
-            // If that fails, try decoding directly as a string (videos endpoint)
-            self.id = try container.decode(String.self, forKey: .id)
+            let idContainer = try container.nestedContainer(keyedBy: IDKeys.self, forKey: .id)
+            self.id = try idContainer.decode(String.self, forKey: .videoId)
         }
 
+        // Handle `snippet`
         let snippetContainer = try container.nestedContainer(keyedBy: SnippetKeys.self, forKey: .snippet)
         let rawTitle = try snippetContainer.decode(String.self, forKey: .title)
         self.title = rawTitle.stringByDecodingHTMLEntities
-        self.description = try snippetContainer.decode(String.self, forKey: .description)
+        self.description = try snippetContainer.decodeIfPresent(String.self, forKey: .description) ?? ""
 
+        // Handle `thumbnails`
         let thumbnailContainer = try snippetContainer.nestedContainer(keyedBy: ThumbnailKeys.self, forKey: .thumbnails)
-        let defaultThumbnailContainer = try thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail)
-        self.thumbnailURL = try defaultThumbnailContainer.decode(URL.self, forKey: .url)
+        if let defaultThumbnailContainer = try? thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail) {
+            self.thumbnailURL = try defaultThumbnailContainer.decode(URL.self, forKey: .url)
+        } else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "No valid thumbnail found"))
+        }
     }
 
+
     func encode(to encoder: Encoder) throws {
-        // Encode into the flat structure for caching
         var container = encoder.container(keyedBy: FlatKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(title, forKey: .title)

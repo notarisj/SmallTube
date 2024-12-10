@@ -18,7 +18,7 @@ enum AlertType: Identifiable {
 }
 
 class YouTubeViewModel: ObservableObject {
-    @Published var videos = [YouTubeVideo]()
+    @Published var videos = [CachedYouTubeVideo]()
     @Published var currentAlert: AlertType?
     
     // MARK: - Caching properties
@@ -73,26 +73,30 @@ class YouTubeViewModel: ObservableObject {
             }
             return
         }
-        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=\(query)&maxResults=\(resultsCount)&key=\(apiKey)&type=video"
+        
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=\(encodedQuery)&maxResults=\(resultsCount)&key=\(apiKey)&type=video"
         guard let url = URL(string: urlString) else { return }
+        
         URLSession.shared.dataTask(with: url) { (data, response, error) in
-            if let data = data {
-                do {
-                    let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
+            guard let data = data else { return }
+            
+            do {
+                let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
+                let cachedVideos = response.items.map { CachedYouTubeVideo(from: $0) }
+                DispatchQueue.main.async {
+                    self.videos = cachedVideos
+                    self.currentAlert = self.videos.isEmpty ? .noResults : nil
+                }
+            } catch {
+                if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
+                   errorResponse.error.code == 403 {
                     DispatchQueue.main.async {
-                        self.videos = response.items
-                        self.currentAlert = self.videos.isEmpty ? .noResults : nil
+                        self.currentAlert = .quotaExceeded
                     }
-                } catch {
-                    if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
-                       errorResponse.error.code == 403 {
-                        DispatchQueue.main.async {
-                            self.currentAlert = .quotaExceeded
-                        }
-                    } else {
-                        DispatchQueue.main.async {
-                            self.currentAlert = .apiError
-                        }
+                } else {
+                    DispatchQueue.main.async {
+                        self.currentAlert = .apiError
                     }
                 }
             }
@@ -122,26 +126,26 @@ class YouTubeViewModel: ObservableObject {
         
         guard let url = URL(string: urlString) else { return }
         URLSession.shared.dataTask(with: url) { (data, response, error) in
-            if let data = data {
-                do {
-                    let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
+            guard let data = data else { return }
+            do {
+                let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
+                let cachedVideos = response.items.map { CachedYouTubeVideo(from: $0) }
+                DispatchQueue.main.async {
+                    self.videos = cachedVideos
+                    self.currentAlert = self.videos.isEmpty ? .noResults : nil
+                    
+                    // Update the cache with new results
+                    self.cacheTrendingVideos(self.videos)
+                }
+            } catch {
+                if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
+                   errorResponse.error.code == 403 {
                     DispatchQueue.main.async {
-                        self.videos = response.items
-                        self.currentAlert = self.videos.isEmpty ? .noResults : nil
-                        
-                        // Update the cache with new results
-                        self.cacheTrendingVideos(self.videos)
+                        self.currentAlert = .quotaExceeded
                     }
-                } catch {
-                    if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
-                       errorResponse.error.code == 403 {
-                        DispatchQueue.main.async {
-                            self.currentAlert = .quotaExceeded
-                        }
-                    } else {
-                        DispatchQueue.main.async {
-                            self.currentAlert = .apiError
-                        }
+                } else {
+                    DispatchQueue.main.async {
+                        self.currentAlert = .apiError
                     }
                 }
             }
@@ -149,39 +153,39 @@ class YouTubeViewModel: ObservableObject {
     }
 
     func searchSuggestions(query: String) -> [String] {
+        // For now, we just return last searches. You could filter by query if desired.
         return lastSearches
     }
     
     func deleteSearches(at offsets: IndexSet) {
-        lastSearches.remove(atOffsets: offsets)
-        lastSearches = lastSearches
+        var searches = lastSearches
+        searches.remove(atOffsets: offsets)
+        lastSearches = searches
     }
     
     // MARK: - Caching Methods
     
-    private func cacheTrendingVideos(_ videos: [YouTubeVideo]) {
+    private func cacheTrendingVideos(_ videos: [CachedYouTubeVideo]) {
         do {
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(videos)
+            let data = try JSONEncoder().encode(videos)
             UserDefaults.standard.set(data, forKey: trendingCacheKey)
             UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: trendingCacheDateKey)
         } catch {
             print("Failed to cache trending videos: \(error)")
         }
     }
-    
-    private func loadCachedTrendingVideos() -> [YouTubeVideo]? {
+
+    private func loadCachedTrendingVideos() -> [CachedYouTubeVideo]? {
         guard let data = UserDefaults.standard.data(forKey: trendingCacheKey) else { return nil }
         do {
-            let decoder = JSONDecoder()
-            let videos = try decoder.decode([YouTubeVideo].self, from: data)
+            let videos = try JSONDecoder().decode([CachedYouTubeVideo].self, from: data)
             return videos
         } catch {
             print("Failed to decode cached videos: \(error)")
             return nil
         }
     }
-    
+
     private func isCacheExpired() -> Bool {
         let lastFetchTime = UserDefaults.standard.double(forKey: trendingCacheDateKey)
         guard lastFetchTime > 0 else {
@@ -190,24 +194,4 @@ class YouTubeViewModel: ObservableObject {
         let now = Date().timeIntervalSince1970
         return now - lastFetchTime > cacheDuration
     }
-}
-
-struct YouTubeResponse: Decodable {
-    let items: [YouTubeVideo]
-}
-
-struct ErrorResponse: Decodable {
-    let error: APIError
-}
-
-struct APIError: Decodable {
-    let code: Int
-    let message: String
-    let errors: [ErrorDetail]
-}
-
-struct ErrorDetail: Decodable {
-    let message: String
-    let domain: String
-    let reason: String
 }

@@ -85,11 +85,6 @@ struct SearchView: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
-                        Image(systemName: "gear")
-                    }
-                }
                 if !showSearchView {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(action: {

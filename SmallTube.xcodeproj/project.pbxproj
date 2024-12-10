@@ -12,6 +12,12 @@
 		0519A9572D064F9500ABE3AE /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9562D064F9400ABE3AE /* SearchView.swift */; };
 		0519A9592D06E1E100ABE3AE /* Countries.json in Resources */ = {isa = PBXBuildFile; fileRef = 0519A9582D06E1DF00ABE3AE /* Countries.json */; };
 		0519A95B2D06E1F600ABE3AE /* Countries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A95A2D06E1F400ABE3AE /* Countries.swift */; };
+		0519A95E2D07935000ABE3AE /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A95D2D07934E00ABE3AE /* AuthManager.swift */; };
+		0519A9602D07939300ABE3AE /* SubscriptionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A95F2D07939100ABE3AE /* SubscriptionsViewModel.swift */; };
+		0519A9622D0793A800ABE3AE /* YouTubeChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9612D0793A600ABE3AE /* YouTubeChannel.swift */; };
+		0519A9642D0793B300ABE3AE /* SubscriptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9632D0793B200ABE3AE /* SubscriptionsView.swift */; };
+		0519A9682D07A13700ABE3AE /* YouTubeAPIVideo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9672D07A13500ABE3AE /* YouTubeAPIVideo.swift */; };
+		0519A96A2D07A14900ABE3AE /* CachedYouTubeVideo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9692D07A14600ABE3AE /* CachedYouTubeVideo.swift */; };
 		054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */; };
 		054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34AB2BF02E98008E9B18 /* ContentView.swift */; };
 		054F34AE2BF02E9A008E9B18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 054F34AD2BF02E9A008E9B18 /* Assets.xcassets */; };
@@ -30,6 +36,12 @@
 		0519A9582D06E1DF00ABE3AE /* Countries.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Countries.json; sourceTree = "<group>"; };
 		0519A95A2D06E1F400ABE3AE /* Countries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Countries.swift; sourceTree = "<group>"; };
 		0519A95C2D078CB700ABE3AE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		0519A95D2D07934E00ABE3AE /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		0519A95F2D07939100ABE3AE /* SubscriptionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsViewModel.swift; sourceTree = "<group>"; };
+		0519A9612D0793A600ABE3AE /* YouTubeChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeChannel.swift; sourceTree = "<group>"; };
+		0519A9632D0793B200ABE3AE /* SubscriptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsView.swift; sourceTree = "<group>"; };
+		0519A9672D07A13500ABE3AE /* YouTubeAPIVideo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeAPIVideo.swift; sourceTree = "<group>"; };
+		0519A9692D07A14600ABE3AE /* CachedYouTubeVideo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedYouTubeVideo.swift; sourceTree = "<group>"; };
 		054F34A62BF02E98008E9B18 /* SmallTube.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmallTube.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallTubeApp.swift; sourceTree = "<group>"; };
 		054F34AB2BF02E98008E9B18 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -72,6 +84,12 @@
 		054F34A82BF02E98008E9B18 /* SmallTube */ = {
 			isa = PBXGroup;
 			children = (
+				0519A9692D07A14600ABE3AE /* CachedYouTubeVideo.swift */,
+				0519A9672D07A13500ABE3AE /* YouTubeAPIVideo.swift */,
+				0519A9632D0793B200ABE3AE /* SubscriptionsView.swift */,
+				0519A9612D0793A600ABE3AE /* YouTubeChannel.swift */,
+				0519A95F2D07939100ABE3AE /* SubscriptionsViewModel.swift */,
+				0519A95D2D07934E00ABE3AE /* AuthManager.swift */,
 				0519A95C2D078CB700ABE3AE /* Info.plist */,
 				0519A95A2D06E1F400ABE3AE /* Countries.swift */,
 				0519A9582D06E1DF00ABE3AE /* Countries.json */,
@@ -171,15 +189,21 @@
 			buildActionMask = 2147483647;
 			files = (
 				0519A95B2D06E1F600ABE3AE /* Countries.swift in Sources */,
+				0519A95E2D07935000ABE3AE /* AuthManager.swift in Sources */,
 				0519A9572D064F9500ABE3AE /* SearchView.swift in Sources */,
+				0519A9642D0793B300ABE3AE /* SubscriptionsView.swift in Sources */,
+				0519A9602D07939300ABE3AE /* SubscriptionsViewModel.swift in Sources */,
 				0519A9552D064F8400ABE3AE /* TrendingView.swift in Sources */,
 				054F34C02BF02F13008E9B18 /* AsyncImage.swift in Sources */,
 				054F34B82BF02EE6008E9B18 /* SettingsView.swift in Sources */,
+				0519A96A2D07A14900ABE3AE /* CachedYouTubeVideo.swift in Sources */,
+				0519A9622D0793A800ABE3AE /* YouTubeChannel.swift in Sources */,
 				054F34BC2BF02F01008E9B18 /* YouTubeViewModel.swift in Sources */,
 				054F34BA2BF02EF0008E9B18 /* YouTubeVideo.swift in Sources */,
 				054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */,
 				0519A9532D064F6B00ABE3AE /* HomeView.swift in Sources */,
 				054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */,
+				0519A9682D07A13700ABE3AE /* YouTubeAPIVideo.swift in Sources */,
 				054F34BE2BF02F0B008E9B18 /* VideoPlayerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
