@@ -9,6 +9,9 @@ struct SettingsView: View {
     @Environment(\.presentationMode) var presentationMode
     @StateObject var countryStore = CountryStore()
     @EnvironmentObject var authManager: AuthManager
+    
+    // State variable to control the display of the sign-out confirmation alert
+    @State private var showSignOutAlert = false
 
     var body: some View {
         NavigationView {
@@ -21,9 +24,11 @@ struct SettingsView: View {
                             // If display name isn't fetched yet, show partial token or a placeholder
                             Text("Signed In: \(token.prefix(10))...")
                         }
+                        // Update the Sign Out button to show the confirmation alert
                         Button("Sign Out") {
-                            authManager.signOut()
+                            showSignOutAlert = true
                         }
+                        .foregroundColor(.red) // Optional: Make the sign-out button red to indicate caution
                     } else {
                         Button("Sign In with Google") {
                             authManager.startSignInFlow()
@@ -33,12 +38,14 @@ struct SettingsView: View {
                 
                 Section(header: Text("API Key")) {
                     TextField("Enter API Key", text: $apiKey)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
                 }
                 
                 Section(header: Text("Results Count")) {
                     Picker("Results Count", selection: $resultsCount) {
-                        ForEach(1...100, id: \.self) {
-                            Text("\($0)")
+                        ForEach(1...100, id: \.self) { count in
+                            Text("\(count)")
                         }
                     }
                 }
@@ -51,7 +58,12 @@ struct SettingsView: View {
                             }
                         }
                     } label: {
-                        Text("Selected: \(countryCode)")
+                        HStack {
+                            Text("Selected: \(countryCode)")
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
                 
@@ -62,6 +74,17 @@ struct SettingsView: View {
                 }
             }
             .navigationBarTitle("Settings")
+            // Attach the alert to the Form or any parent view
+            .alert(isPresented: $showSignOutAlert) {
+                Alert(
+                    title: Text("Confirm Sign Out"),
+                    message: Text("Are you sure you want to sign out?"),
+                    primaryButton: .destructive(Text("Yes")) {
+                        authManager.signOut()
+                    },
+                    secondaryButton: .cancel(Text("No"))
+                )
+            }
         }
     }
 }
