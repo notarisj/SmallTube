@@ -70,11 +70,25 @@ class HomeFeedViewModel: ObservableObject {
                 // For simplicity, let's just leave them as-is or sort by title.
                 // If you need sorting by publish date, you'll have to parse it out of snippet (if included).
                 
-                let sortedVideos = fetchedVideos // Add sorting logic if needed
                 DispatchQueue.main.async {
-                    self.videos = sortedVideos
+                    if fetchedVideos.isEmpty && (self.currentAlert == .apiError || self.currentAlert == .quotaExceeded) {
+                        // We got an error and no new videos from the API, try loading from cache
+                        if let cachedVideos = self.loadCachedHomeFeedVideos(), !cachedVideos.isEmpty {
+                            self.videos = cachedVideos
+                            // Since we have a fallback from cache, we keep the user informed about the error,
+                            // but they can still watch previously cached videos.
+                            // The currentAlert is already set to .apiError or .quotaExceeded, which is fine.
+                        } else {
+                            // No cached videos and we have an error
+                            // The alert is already set (apiError or quotaExceeded)
+                            self.videos = []
+                        }
+                    } else {
+                        // Normal case: we got some videos
+                        self.videos = fetchedVideos
+                        self.cacheHomeFeedVideos(self.videos)
                     self.currentAlert = self.videos.isEmpty ? .noResults : nil
-                    self.cacheHomeFeedVideos(self.videos)
+                    }
                 }
             }
         }
@@ -141,6 +155,7 @@ class HomeFeedViewModel: ObservableObject {
                     let cachedVideos = response.items.map { CachedYouTubeVideo(from: $0) }
                     allVideos.append(contentsOf: cachedVideos)
                 } catch {
+                    // Check if it's a quota issue
                     if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
                        errorResponse.error.code == 403 {
                         DispatchQueue.main.async {
@@ -194,7 +209,6 @@ class HomeFeedViewModel: ObservableObject {
         return now - lastFetchTime > cacheDuration
     }
 }
-
 
 // MARK: - Subscription Models
 
