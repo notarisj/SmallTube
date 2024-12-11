@@ -14,15 +14,15 @@ class HomeFeedViewModel: ObservableObject {
 
     private let homeFeedCacheKey = "homeFeedVideosCacheKey"
     private let homeFeedCacheDateKey = "homeFeedVideosCacheDateKey"
-    private let cacheDuration: TimeInterval = 1000
-    
+    private let cacheDuration: TimeInterval = 1000 // 1 hour
+
     var apiKey: String {
         get { UserDefaults.standard.string(forKey: "apiKey") ?? "" }
         set { UserDefaults.standard.set(newValue, forKey: "apiKey") }
     }
 
-    var resultsCount: String {
-        get { UserDefaults.standard.string(forKey: "resultsCount") ?? "10" }
+    var resultsCount: Int {
+        get { UserDefaults.standard.integer(forKey: "resultsCount") }
         set { UserDefaults.standard.set(newValue, forKey: "resultsCount") }
     }
 
@@ -62,33 +62,13 @@ class HomeFeedViewModel: ObservableObject {
                 }
                 return
             }
-            
-            // Fetch videos from each channel
+
+            // Fetch videos using the 'videos' endpoint with batch requests
             self.fetchVideos(from: channelIds) { fetchedVideos in
-                // Sort the videos by some criterion, e.g., title or date
-                // The snippet returned typically has a publishTime we can use to sort by date.
-                // For simplicity, let's just leave them as-is or sort by title.
-                // If you need sorting by publish date, you'll have to parse it out of snippet (if included).
-                
                 DispatchQueue.main.async {
-                    if fetchedVideos.isEmpty && (self.currentAlert == .apiError || self.currentAlert == .quotaExceeded) {
-                        // We got an error and no new videos from the API, try loading from cache
-                        if let cachedVideos = self.loadCachedHomeFeedVideos(), !cachedVideos.isEmpty {
-                            self.videos = cachedVideos
-                            // Since we have a fallback from cache, we keep the user informed about the error,
-                            // but they can still watch previously cached videos.
-                            // The currentAlert is already set to .apiError or .quotaExceeded, which is fine.
-                        } else {
-                            // No cached videos and we have an error
-                            // The alert is already set (apiError or quotaExceeded)
-                            self.videos = []
-                        }
-                    } else {
-                        // Normal case: we got some videos
-                        self.videos = fetchedVideos
-                        self.cacheHomeFeedVideos(self.videos)
+                    self.videos = fetchedVideos
+                    self.cacheHomeFeedVideos(self.videos)
                     self.currentAlert = self.videos.isEmpty ? .noResults : nil
-                    }
                 }
             }
         }
@@ -96,9 +76,9 @@ class HomeFeedViewModel: ObservableObject {
 
     private func fetchSubscriptions(token: String, completion: @escaping ([String]) -> Void) {
         // Fetch the user's subscriptions: channel IDs.
-        // Endpoint: GET https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true
+        // Endpoint: GET https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=5
         // Requires authorization with Bearer token
-        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=10") else {
+        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=20") else {
             completion([])
             return
         }
@@ -108,72 +88,156 @@ class HomeFeedViewModel: ObservableObject {
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {
+                DispatchQueue.main.async {
+                    self.currentAlert = .apiError
+                }
                 completion([])
                 return
             }
             do {
                 let subResponse = try JSONDecoder().decode(SubscriptionListResponse.self, from: data)
-                // Extract up to 10 channel IDs from response
-                let channelIds = subResponse.items.prefix(10).map { $0.snippet.resourceId.channelId }
+                // Extract up to 5 channel IDs from response
+                let channelIds = subResponse.items.prefix(5).map { $0.snippet.resourceId.channelId }
                 completion(channelIds)
             } catch {
                 print("Failed to parse subscriptions: \(error)")
+                DispatchQueue.main.async {
+                    self.currentAlert = .apiError
+                }
                 completion([])
             }
         }.resume()
     }
 
     private func fetchVideos(from channelIds: [String], completion: @escaping ([CachedYouTubeVideo]) -> Void) {
-        guard !channelIds.isEmpty else {
-            completion([])
-            return
-        }
+        // Step 1: For each channel, get the uploads playlist ID
+        // Step 2: Fetch videos from the uploads playlists
 
-        // We will fetch videos from all channels concurrently and then combine results.
-        // One approach: For each channel, use the search endpoint filtered by channelId:
-        // GET https://www.googleapis.com/youtube/v3/search?channelId={id}&part=snippet&maxResults={count}&order=date&key={apiKey}&type=video
-        // This fetches recent videos from the channel.
-        
         let group = DispatchGroup()
         var allVideos: [CachedYouTubeVideo] = []
-        let maxResults = resultsCount
-        
+        let maxResultsPerChannel = min(resultsCount, 10) // Limit to 5 videos per channel
+
         for channelId in channelIds {
             group.enter()
-            let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=\(channelId)&maxResults=\(maxResults)&order=date&key=\(apiKey)&type=video"
-            guard let url = URL(string: urlString) else {
-                group.leave()
-                continue
-            }
-            
-            URLSession.shared.dataTask(with: url) { data, response, error in
-                defer { group.leave() }
-                guard let data = data, error == nil else { return }
-                
-                do {
-                    let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
-                    let cachedVideos = response.items.map { CachedYouTubeVideo(from: $0) }
-                    allVideos.append(contentsOf: cachedVideos)
-                } catch {
-                    // Check if it's a quota issue
-                    if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
-                       errorResponse.error.code == 403 {
-                        DispatchQueue.main.async {
-                            self.currentAlert = .quotaExceeded
-                        }
-                    } else {
-                        DispatchQueue.main.async {
-                            self.currentAlert = .apiError
-                        }
-                    }
+            getUploadsPlaylistId(for: channelId) { playlistId in
+                guard let playlistId = playlistId else {
+                    group.leave()
+                    return
                 }
-            }.resume()
+
+                self.fetchVideosFromPlaylist(playlistId: playlistId, maxResults: maxResultsPerChannel) { videos in
+                    allVideos.append(contentsOf: videos)
+                    group.leave()
+                }
+            }
         }
-        
+
         group.notify(queue: .main) {
             // Sort the videos by publish date (newest first)
             let sortedVideos = allVideos.sorted(by: { $0.publishedAt > $1.publishedAt })
             completion(sortedVideos)
+        }
+    }
+
+    private func getUploadsPlaylistId(for channelId: String, completion: @escaping (String?) -> Void) {
+        // Endpoint: GET https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id={channelId}&key={apiKey}
+        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=\(channelId)&key=\(apiKey)") else {
+            completion(nil)
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, error == nil else {
+                DispatchQueue.main.async {
+                    self.currentAlert = .apiError
+                }
+                completion(nil)
+                return
+            }
+            do {
+                let channelResponse = try JSONDecoder().decode(ChannelContentResponse.self, from: data)
+                if let playlistId = channelResponse.items.first?.contentDetails.relatedPlaylists.uploads {
+                    completion(playlistId)
+                } else {
+                    completion(nil)
+                }
+            } catch {
+                print("Failed to parse channel content details: \(error)")
+                DispatchQueue.main.async {
+                    self.currentAlert = .apiError
+                }
+                completion(nil)
+            }
+        }.resume()
+    }
+
+    private func fetchVideosFromPlaylist(playlistId: String, maxResults: Int, completion: @escaping ([CachedYouTubeVideo]) -> Void) {
+        // Endpoint: GET https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={playlistId}&maxResults={maxResults}&key={apiKey}
+        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=\(playlistId)&maxResults=\(maxResults)&key=\(apiKey)") else {
+            completion([])
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, error == nil else {
+                DispatchQueue.main.async {
+                    self.currentAlert = .apiError
+                }
+                completion([])
+                return
+            }
+            do {
+                let playlistResponse = try JSONDecoder().decode(PlaylistItemsResponse.self, from: data)
+                let videoIds = playlistResponse.items.map { $0.snippet.resourceId.videoId }
+                self.fetchVideoDetails(videoIds: videoIds) { videos in
+                    completion(videos)
+                }
+            } catch {
+                print("Failed to parse playlist items: \(error)")
+                DispatchQueue.main.async {
+                    self.currentAlert = .apiError
+                }
+                completion([])
+            }
+        }.resume()
+    }
+
+    private func fetchVideoDetails(videoIds: [String], completion: @escaping ([CachedYouTubeVideo]) -> Void) {
+        // Batch video IDs into groups of 50 (API limit)
+        let batches = stride(from: 0, to: videoIds.count, by: 50).map {
+            Array(videoIds[$0..<min($0 + 50, videoIds.count)])
+        }
+
+        var allVideos: [CachedYouTubeVideo] = []
+        let group = DispatchGroup()
+
+        for batch in batches {
+            group.enter()
+            let ids = batch.joined(separator: ",")
+            guard let url = URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=\(ids)&key=\(apiKey)") else {
+                group.leave()
+                continue
+            }
+
+            URLSession.shared.dataTask(with: url) { data, response, error in
+                defer { group.leave() }
+                guard let data = data, error == nil else { return }
+
+                do {
+                    let videoResponse = try JSONDecoder().decode(VideoListResponse.self, from: data)
+                    let cachedVideos = videoResponse.items.map { CachedYouTubeVideo(from: $0) }
+                    allVideos.append(contentsOf: cachedVideos)
+                } catch {
+                    print("Failed to parse video details: \(error)")
+                    DispatchQueue.main.async {
+                        self.currentAlert = .apiError
+                    }
+                }
+            }.resume()
+        }
+
+        group.notify(queue: .main) {
+            completion(allVideos)
         }
     }
 
@@ -214,4 +278,40 @@ class HomeFeedViewModel: ObservableObject {
 
 struct SubscriptionListResponse: Decodable {
     let items: [SubscriptionItem]
+}
+
+struct ChannelContentResponse: Decodable {
+    let items: [ChannelContentItem]
+}
+
+struct ChannelContentItem: Decodable {
+    let contentDetails: ContentDetails
+}
+
+struct ContentDetails: Decodable {
+    let relatedPlaylists: RelatedPlaylists
+}
+
+struct RelatedPlaylists: Decodable {
+    let uploads: String
+}
+
+struct PlaylistItemsResponse: Decodable {
+    let items: [PlaylistItem]
+}
+
+struct PlaylistItem: Decodable {
+    let snippet: PlaylistSnippet
+}
+
+struct PlaylistSnippet: Decodable {
+    let resourceId: ResourceID
+}
+
+struct ResourceID: Decodable {
+    let videoId: String
+}
+
+struct VideoListResponse: Decodable {
+    let items: [YouTubeAPIVideo]
 }
