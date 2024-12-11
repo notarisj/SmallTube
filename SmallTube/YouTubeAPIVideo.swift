@@ -83,19 +83,3 @@ extension String {
 struct YouTubeResponse: Decodable {
     let items: [YouTubeAPIVideo]
 }
-
-struct ErrorResponse: Decodable {
-    let error: APIError
-}
-
-struct APIError: Decodable {
-    let code: Int
-    let message: String
-    let errors: [ErrorDetail]
-}
-
-struct ErrorDetail: Decodable {
-    let message: String
-    let domain: String
-    let reason: String
-}

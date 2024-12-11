@@ -97,20 +97,8 @@ class SubscriptionsViewModel: ObservableObject {
                 self.cacheSubscriptions(channels)
             }
         } catch {
-            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                print("Subscriptions API error code: \(errorResponse.error.code)")
-                print("Message: \(errorResponse.error.message)")
-                DispatchQueue.main.async {
-                    if errorResponse.error.code == 403 {
-                        self.currentAlert = .quotaExceeded
-                    } else {
-                        self.currentAlert = .apiError
-                    }
-                }
-            } else {
-                DispatchQueue.main.async {
-                    self.currentAlert = .apiError
-                }
+            DispatchQueue.main.async {
+                self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
             }
         }
     }

@@ -42,16 +42,7 @@ struct SubscriptionsView: View {
             }
             .navigationTitle("Subscriptions")
             .alert(item: $viewModel.currentAlert) { alertType in
-                switch alertType {
-                case .noResults:
-                    return Alert(title: Text("No Results"), message: Text("No subscriptions found."), dismissButton: .default(Text("OK")))
-                case .apiError:
-                    return Alert(title: Text("Error"), message: Text("Unable to load subscriptions. Check your sign-in and API key."), dismissButton: .default(Text("OK")))
-                case .emptyQuery:
-                    return Alert(title: Text("Empty Query"), message: Text("Please enter a search term."), dismissButton: .default(Text("OK")))
-                case .quotaExceeded:
-                    return Alert(title: Text("Quota Exceeded"), message: Text("You have exceeded your YouTube API quota."), dismissButton: .default(Text("OK")))
-                }
+                AlertBuilder.buildAlert(for: alertType)
             }
         }
     }

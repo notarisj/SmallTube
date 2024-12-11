@@ -14,7 +14,7 @@ class HomeFeedViewModel: ObservableObject {
 
     private let homeFeedCacheKey = "homeFeedVideosCacheKey"
     private let homeFeedCacheDateKey = "homeFeedVideosCacheDateKey"
-    private let cacheDuration: TimeInterval = 1000 // 1 hour
+    private let cacheDuration: TimeInterval = 10 // 1 hour
 
     var apiKey: String {
         get { UserDefaults.standard.string(forKey: "apiKey") ?? "" }
@@ -100,9 +100,8 @@ class HomeFeedViewModel: ObservableObject {
                 let channelIds = subResponse.items.prefix(5).map { $0.snippet.resourceId.channelId }
                 completion(channelIds)
             } catch {
-                print("Failed to parse subscriptions: \(error)")
                 DispatchQueue.main.async {
-                    self.currentAlert = .apiError
+                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
                 completion([])
             }
@@ -164,7 +163,7 @@ class HomeFeedViewModel: ObservableObject {
             } catch {
                 print("Failed to parse channel content details: \(error)")
                 DispatchQueue.main.async {
-                    self.currentAlert = .apiError
+                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
                 completion(nil)
             }
@@ -195,7 +194,7 @@ class HomeFeedViewModel: ObservableObject {
             } catch {
                 print("Failed to parse playlist items: \(error)")
                 DispatchQueue.main.async {
-                    self.currentAlert = .apiError
+                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
                 completion([])
             }
@@ -230,7 +229,7 @@ class HomeFeedViewModel: ObservableObject {
                 } catch {
                     print("Failed to parse video details: \(error)")
                     DispatchQueue.main.async {
-                        self.currentAlert = .apiError
+                        self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                     }
                 }
             }.resume()

@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 enum AlertType: Identifiable {
-    case noResults, apiError, emptyQuery, quotaExceeded
+    case noResults, apiError, emptyQuery, quotaExceeded, credsMismatch, unknownError
     var id: Int {
         switch self {
         case .noResults:
@@ -13,6 +13,10 @@ enum AlertType: Identifiable {
             return 2
         case .quotaExceeded:
             return 3
+        case .credsMismatch:
+            return 4
+        case .unknownError:
+            return 5
         }
     }
 }
@@ -89,15 +93,8 @@ class YouTubeViewModel: ObservableObject {
                     self.currentAlert = self.videos.isEmpty ? .noResults : nil
                 }
             } catch {
-                if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
-                   errorResponse.error.code == 403 {
-                    DispatchQueue.main.async {
-                        self.currentAlert = .quotaExceeded
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.currentAlert = .apiError
-                    }
+                DispatchQueue.main.async {
+                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
             }
         }.resume()
@@ -138,15 +135,8 @@ class YouTubeViewModel: ObservableObject {
                     self.cacheTrendingVideos(self.videos)
                 }
             } catch {
-                if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data),
-                   errorResponse.error.code == 403 {
-                    DispatchQueue.main.async {
-                        self.currentAlert = .quotaExceeded
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.currentAlert = .apiError
-                    }
+                DispatchQueue.main.async {
+                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
             }
         }.resume()
