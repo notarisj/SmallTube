@@ -12,6 +12,7 @@ struct CachedYouTubeVideo: Identifiable, Codable {
     let title: String
     let description: String
     let thumbnailURL: URL
+    let publishedAt: Date
     
     // Convert from the API model to the cached model
     init(from apiVideo: YouTubeAPIVideo) {
@@ -19,5 +20,6 @@ struct CachedYouTubeVideo: Identifiable, Codable {
         self.title = apiVideo.title
         self.description = apiVideo.description
         self.thumbnailURL = apiVideo.thumbnailURL
+        self.publishedAt = apiVideo.publishedAt
     }
 }

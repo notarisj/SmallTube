@@ -12,6 +12,7 @@ struct YouTubeAPIVideo: Decodable {
     let title: String
     let description: String
     let thumbnailURL: URL
+    let publishedAt: Date
     
     enum APIKeys: String, CodingKey {
         case id, snippet
@@ -22,7 +23,7 @@ struct YouTubeAPIVideo: Decodable {
     }
     
     enum SnippetKeys: String, CodingKey {
-        case title, description, thumbnails
+        case title, description, thumbnails, publishedAt
     }
     
     enum ThumbnailKeys: String, CodingKey {
@@ -51,6 +52,16 @@ struct YouTubeAPIVideo: Decodable {
         self.description = try snippetContainer.decodeIfPresent(String.self, forKey: .description) ?? ""
         
         // Decode `thumbnails`
+        let publishedAtString = try snippetContainer.decode(String.self, forKey: .publishedAt)
+        let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: publishedAtString) {
+            self.publishedAt = date
+        } else {
+            // If parsing fails, use current date as fallback.
+            self.publishedAt = Date()
+        }
+        
+        // Decode thumbnails
         let thumbnailContainer = try snippetContainer.nestedContainer(keyedBy: ThumbnailKeys.self, forKey: .thumbnails)
         let defaultThumbnailContainer = try thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail)
         self.thumbnailURL = try defaultThumbnailContainer.decode(URL.self, forKey: .url)
@@ -67,7 +78,7 @@ extension String {
         guard let attributedString = try? NSAttributedString(data: data, options: options, documentAttributes: nil) else { return self }
         return attributedString.string
     }
-    }
+}
 
 struct YouTubeResponse: Decodable {
     let items: [YouTubeAPIVideo]

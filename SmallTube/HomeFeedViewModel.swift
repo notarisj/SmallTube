@@ -156,8 +156,9 @@ class HomeFeedViewModel: ObservableObject {
         }
         
         group.notify(queue: .main) {
-            // Once all channel fetches complete, return the combined results
-            completion(allVideos)
+            // Sort the videos by publish date (newest first)
+            let sortedVideos = allVideos.sorted(by: { $0.publishedAt > $1.publishedAt })
+            completion(sortedVideos)
         }
     }
 
