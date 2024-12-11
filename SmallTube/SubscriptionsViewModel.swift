@@ -54,7 +54,7 @@ class SubscriptionsViewModel: ObservableObject {
             return
         }
 
-        let urlString = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=\(resultsCount)&key=\(apiKey)"
+        let urlString = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=250&key=\(apiKey)"
         
         guard let url = URL(string: urlString) else { return }
         var request = URLRequest(url: url)
