@@ -25,7 +25,6 @@
 		054F34AE2BF02E9A008E9B18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 054F34AD2BF02E9A008E9B18 /* Assets.xcassets */; };
 		054F34B12BF02E9A008E9B18 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 054F34B02BF02E9A008E9B18 /* Preview Assets.xcassets */; };
 		054F34B82BF02EE6008E9B18 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34B72BF02EE6008E9B18 /* SettingsView.swift */; };
-		054F34BA2BF02EF0008E9B18 /* YouTubeVideo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34B92BF02EF0008E9B18 /* YouTubeVideo.swift */; };
 		054F34BC2BF02F01008E9B18 /* YouTubeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */; };
 		054F34BE2BF02F0B008E9B18 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */; };
 		054F34C02BF02F13008E9B18 /* AsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BF2BF02F13008E9B18 /* AsyncImage.swift */; };
@@ -52,7 +51,6 @@
 		054F34AD2BF02E9A008E9B18 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		054F34B02BF02E9A008E9B18 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		054F34B72BF02EE6008E9B18 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		054F34B92BF02EF0008E9B18 /* YouTubeVideo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeVideo.swift; sourceTree = "<group>"; };
 		054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeViewModel.swift; sourceTree = "<group>"; };
 		054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
 		054F34BF2BF02F13008E9B18 /* AsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncImage.swift; sourceTree = "<group>"; };
@@ -107,7 +105,6 @@
 				054F34AD2BF02E9A008E9B18 /* Assets.xcassets */,
 				054F34AF2BF02E9A008E9B18 /* Preview Content */,
 				054F34B72BF02EE6008E9B18 /* SettingsView.swift */,
-				054F34B92BF02EF0008E9B18 /* YouTubeVideo.swift */,
 				054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */,
 				054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */,
 				054F34BF2BF02F13008E9B18 /* AsyncImage.swift */,
@@ -207,7 +204,6 @@
 				0519A9622D0793A800ABE3AE /* YouTubeChannel.swift in Sources */,
 				054F34BC2BF02F01008E9B18 /* YouTubeViewModel.swift in Sources */,
 				0519A9702D08E37300ABE3AE /* HomeFeedViewModel.swift in Sources */,
-				054F34BA2BF02EF0008E9B18 /* YouTubeVideo.swift in Sources */,
 				054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */,
 				0519A9532D064F6B00ABE3AE /* HomeView.swift in Sources */,
 				054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */,
