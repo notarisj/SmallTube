@@ -23,6 +23,8 @@
 		0519A9762D0A258F00ABE3AE /* AlertBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9752D0A258D00ABE3AE /* AlertBuilder.swift */; };
 		0519A9782D0A29D000ABE3AE /* ErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9772D0A29CF00ABE3AE /* ErrorHandler.swift */; };
 		0519A97A2D0A29E300ABE3AE /* ErrorResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9792D0A29E000ABE3AE /* ErrorResponse.swift */; };
+		0519A97C2D0AC57600ABE3AE /* ChannelVideosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A97B2D0AC57500ABE3AE /* ChannelVideosView.swift */; };
+		0519A97E2D0AC58200ABE3AE /* ChannelVideosViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A97D2D0AC58000ABE3AE /* ChannelVideosViewModel.swift */; };
 		054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */; };
 		054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34AB2BF02E98008E9B18 /* ContentView.swift */; };
 		054F34AE2BF02E9A008E9B18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 054F34AD2BF02E9A008E9B18 /* Assets.xcassets */; };
@@ -51,6 +53,8 @@
 		0519A9752D0A258D00ABE3AE /* AlertBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertBuilder.swift; sourceTree = "<group>"; };
 		0519A9772D0A29CF00ABE3AE /* ErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorHandler.swift; sourceTree = "<group>"; };
 		0519A9792D0A29E000ABE3AE /* ErrorResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorResponse.swift; sourceTree = "<group>"; };
+		0519A97B2D0AC57500ABE3AE /* ChannelVideosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelVideosView.swift; sourceTree = "<group>"; };
+		0519A97D2D0AC58000ABE3AE /* ChannelVideosViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelVideosViewModel.swift; sourceTree = "<group>"; };
 		054F34A62BF02E98008E9B18 /* SmallTube.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmallTube.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallTubeApp.swift; sourceTree = "<group>"; };
 		054F34AB2BF02E98008E9B18 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -92,6 +96,8 @@
 		054F34A82BF02E98008E9B18 /* SmallTube */ = {
 			isa = PBXGroup;
 			children = (
+				0519A97D2D0AC58000ABE3AE /* ChannelVideosViewModel.swift */,
+				0519A97B2D0AC57500ABE3AE /* ChannelVideosView.swift */,
 				0519A9792D0A29E000ABE3AE /* ErrorResponse.swift */,
 				0519A9772D0A29CF00ABE3AE /* ErrorHandler.swift */,
 				0519A9752D0A258D00ABE3AE /* AlertBuilder.swift */,
@@ -202,8 +208,10 @@
 			files = (
 				0519A95B2D06E1F600ABE3AE /* Countries.swift in Sources */,
 				0519A95E2D07935000ABE3AE /* AuthManager.swift in Sources */,
+				0519A97C2D0AC57600ABE3AE /* ChannelVideosView.swift in Sources */,
 				0519A9572D064F9500ABE3AE /* SearchView.swift in Sources */,
 				0519A9642D0793B300ABE3AE /* SubscriptionsView.swift in Sources */,
+				0519A97E2D0AC58200ABE3AE /* ChannelVideosViewModel.swift in Sources */,
 				0519A9602D07939300ABE3AE /* SubscriptionsViewModel.swift in Sources */,
 				0519A9762D0A258F00ABE3AE /* AlertBuilder.swift in Sources */,
 				0519A97A2D0A29E300ABE3AE /* ErrorResponse.swift in Sources */,

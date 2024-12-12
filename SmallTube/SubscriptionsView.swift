@@ -10,23 +10,25 @@ import SwiftUI
 struct SubscriptionsView: View {
     @StateObject var viewModel = SubscriptionsViewModel()
     @EnvironmentObject var authManager: AuthManager
-    
+
     var body: some View {
         NavigationView {
             List(viewModel.subscriptions) { channel in
-                HStack {
-                    AsyncImage(url: channel.thumbnailURL)
-                        .frame(width: 50, height: 50)
-                        .clipShape(Circle())
-                    VStack(alignment: .leading) {
-                        Text(channel.title)
-                            .font(.headline)
-                            .lineLimit(2)
-                            .truncationMode(.tail)
-                        Text(channel.description)
-                            .font(.subheadline)
-                            .lineLimit(2)
-                            .truncationMode(.tail)
+                NavigationLink(destination: ChannelVideosView(channel: channel)) {
+                    HStack {
+                        AsyncImage(url: channel.thumbnailURL)
+                            .frame(width: 50, height: 50)
+                            .clipShape(Circle())
+                        VStack(alignment: .leading) {
+                            Text(channel.title)
+                                .font(.headline)
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                            Text(channel.description)
+                                .font(.subheadline)
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                        }
                     }
                 }
             }
