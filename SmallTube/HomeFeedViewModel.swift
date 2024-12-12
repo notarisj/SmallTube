@@ -14,7 +14,7 @@ class HomeFeedViewModel: ObservableObject {
 
     private let homeFeedCacheKey = "homeFeedVideosCacheKey"
     private let homeFeedCacheDateKey = "homeFeedVideosCacheDateKey"
-    private let cacheDuration: TimeInterval = 10 // 1 hour
+    private let cacheDuration: TimeInterval = 9009 // 15 minutes
 
     var apiKey: String {
         get { UserDefaults.standard.string(forKey: "apiKey") ?? "" }
@@ -22,15 +22,18 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     var resultsCount: Int {
-        get { UserDefaults.standard.integer(forKey: "resultsCount") }
+        get {
+            let count = UserDefaults.standard.integer(forKey: "resultsCount")
+            return count > 0 ? count : 10 // Default to 10 if not set
+        }
         set { UserDefaults.standard.set(newValue, forKey: "resultsCount") }
     }
 
     /// Load the home feed from user's subscribed channels
-    /// - parameter token: The OAuth access token of the logged-in user.
+    /// - Parameter token: The OAuth access token of the logged-in user.
     func loadHomeFeed(token: String?) {
         guard let token = token else {
-            // Not signed in
+            print("No OAuth token provided. User is not signed in.")
             DispatchQueue.main.async {
                 self.currentAlert = .apiError
             }
@@ -38,6 +41,7 @@ class HomeFeedViewModel: ObservableObject {
         }
 
         guard !apiKey.isEmpty else {
+            print("API Key is missing.")
             DispatchQueue.main.async {
                 self.currentAlert = .apiError
             }
@@ -46,6 +50,7 @@ class HomeFeedViewModel: ObservableObject {
 
         // Check cache first
         if let cachedVideos = loadCachedHomeFeedVideos(), !cachedVideos.isEmpty, !isCacheExpired() {
+            print("Loaded \(cachedVideos.count) videos from cache.")
             DispatchQueue.main.async {
                 self.videos = cachedVideos
                 self.currentAlert = self.videos.isEmpty ? .noResults : nil
@@ -54,8 +59,11 @@ class HomeFeedViewModel: ObservableObject {
         }
 
         // Fetch subscriptions first
+        print("Fetching subscriptions...")
         fetchSubscriptions(token: token) { channelIds in
+            print("Fetched channel IDs: \(channelIds)")
             guard !channelIds.isEmpty else {
+                print("No subscriptions found.")
                 DispatchQueue.main.async {
                     self.videos = []
                     self.currentAlert = .noResults
@@ -65,6 +73,7 @@ class HomeFeedViewModel: ObservableObject {
 
             // Fetch videos using the 'videos' endpoint with batch requests
             self.fetchVideos(from: channelIds) { fetchedVideos in
+                print("Fetched \(fetchedVideos.count) videos from subscriptions.")
                 DispatchQueue.main.async {
                     self.videos = fetchedVideos
                     self.cacheHomeFeedVideos(self.videos)
@@ -75,10 +84,8 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     private func fetchSubscriptions(token: String, completion: @escaping ([String]) -> Void) {
-        // Fetch the user's subscriptions: channel IDs.
-        // Endpoint: GET https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=5
-        // Requires authorization with Bearer token
-        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=20") else {
+        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=10") else {
+            print("Invalid URL for fetching subscriptions.")
             completion([])
             return
         }
@@ -87,19 +94,19 @@ class HomeFeedViewModel: ObservableObject {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data, error == nil else {
-                DispatchQueue.main.async {
-                    self.currentAlert = .apiError
-                }
+            guard let data = self.handleResponse(data: data, response: response, error: error, onFailure: {
                 completion([])
+            }) else {
                 return
             }
+
             do {
                 let subResponse = try JSONDecoder().decode(SubscriptionListResponse.self, from: data)
-                // Extract up to 5 channel IDs from response
-                let channelIds = subResponse.items.prefix(5).map { $0.snippet.resourceId.channelId }
+                let channelIds = subResponse.items.prefix(5).compactMap { $0.snippet.resourceId.channelId }
+                print("Extracted channel IDs: \(channelIds)")
                 completion(channelIds)
             } catch {
+                print("Decoding subscriptions failed: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
@@ -114,17 +121,19 @@ class HomeFeedViewModel: ObservableObject {
 
         let group = DispatchGroup()
         var allVideos: [CachedYouTubeVideo] = []
-        let maxResultsPerChannel = min(resultsCount, 10) // Limit to 5 videos per channel
+        let maxResultsPerChannel = min(resultsCount, 10) // Limit to 10 videos per channel
 
         for channelId in channelIds {
             group.enter()
             getUploadsPlaylistId(for: channelId) { playlistId in
                 guard let playlistId = playlistId else {
+                    print("No uploads playlist ID found for channel: \(channelId)")
                     group.leave()
                     return
                 }
 
                 self.fetchVideosFromPlaylist(playlistId: playlistId, maxResults: maxResultsPerChannel) { videos in
+                    print("Fetched \(videos.count) videos from playlist: \(playlistId)")
                     allVideos.append(contentsOf: videos)
                     group.leave()
                 }
@@ -139,29 +148,30 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     private func getUploadsPlaylistId(for channelId: String, completion: @escaping (String?) -> Void) {
-        // Endpoint: GET https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id={channelId}&key={apiKey}
         guard let url = URL(string: "https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=\(channelId)&key=\(apiKey)") else {
+            print("Invalid URL for fetching uploads playlist ID for channel: \(channelId)")
             completion(nil)
             return
         }
 
         URLSession.shared.dataTask(with: url) { data, response, error in
-            guard let data = data, error == nil else {
-                DispatchQueue.main.async {
-                    self.currentAlert = .apiError
-                }
+            guard let data = self.handleResponse(data: data, response: response, error: error, onFailure: {
                 completion(nil)
+            }) else {
                 return
             }
+
             do {
                 let channelResponse = try JSONDecoder().decode(ChannelContentResponse.self, from: data)
                 if let playlistId = channelResponse.items.first?.contentDetails.relatedPlaylists.uploads {
+                    print("Uploads playlist ID for channel \(channelId): \(playlistId)")
                     completion(playlistId)
                 } else {
+                    print("No uploads playlist found for channel: \(channelId)")
                     completion(nil)
                 }
             } catch {
-                print("Failed to parse channel content details: \(error)")
+                print("Decoding uploads playlist ID failed for channel \(channelId): \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
@@ -171,28 +181,28 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     private func fetchVideosFromPlaylist(playlistId: String, maxResults: Int, completion: @escaping ([CachedYouTubeVideo]) -> Void) {
-        // Endpoint: GET https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={playlistId}&maxResults={maxResults}&key={apiKey}
         guard let url = URL(string: "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=\(playlistId)&maxResults=\(maxResults)&key=\(apiKey)") else {
+            print("Invalid URL for fetching videos from playlist: \(playlistId)")
             completion([])
             return
         }
 
         URLSession.shared.dataTask(with: url) { data, response, error in
-            guard let data = data, error == nil else {
-                DispatchQueue.main.async {
-                    self.currentAlert = .apiError
-                }
+            guard let data = self.handleResponse(data: data, response: response, error: error, onFailure: {
                 completion([])
+            }) else {
                 return
             }
+
             do {
                 let playlistResponse = try JSONDecoder().decode(PlaylistItemsResponse.self, from: data)
-                let videoIds = playlistResponse.items.map { $0.snippet.resourceId.videoId }
+                let videoIds = playlistResponse.items.compactMap { $0.snippet.resourceId.videoId }
+                print("Video IDs from playlist \(playlistId): \(videoIds)")
                 self.fetchVideoDetails(videoIds: videoIds) { videos in
                     completion(videos)
                 }
             } catch {
-                print("Failed to parse playlist items: \(error)")
+                print("Decoding videos from playlist \(playlistId) failed: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
@@ -202,7 +212,6 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     private func fetchVideoDetails(videoIds: [String], completion: @escaping ([CachedYouTubeVideo]) -> Void) {
-        // Batch video IDs into groups of 50 (API limit)
         let batches = stride(from: 0, to: videoIds.count, by: 50).map {
             Array(videoIds[$0..<min($0 + 50, videoIds.count)])
         }
@@ -214,20 +223,27 @@ class HomeFeedViewModel: ObservableObject {
             group.enter()
             let ids = batch.joined(separator: ",")
             guard let url = URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=\(ids)&key=\(apiKey)") else {
+                print("Invalid URL for fetching video details for IDs: \(ids)")
                 group.leave()
                 continue
             }
 
             URLSession.shared.dataTask(with: url) { data, response, error in
                 defer { group.leave() }
-                guard let data = data, error == nil else { return }
+
+                guard let data = self.handleResponse(data: data, response: response, error: error, onFailure: {
+                    return
+                }) else {
+                    return
+                }
 
                 do {
                     let videoResponse = try JSONDecoder().decode(VideoListResponse.self, from: data)
                     let cachedVideos = videoResponse.items.map { CachedYouTubeVideo(from: $0) }
+                    print("Fetched \(cachedVideos.count) video details for IDs: \(ids)")
                     allVideos.append(contentsOf: cachedVideos)
                 } catch {
-                    print("Failed to parse video details: \(error)")
+                    print("Decoding video details for IDs \(ids) failed: \(error.localizedDescription)")
                     DispatchQueue.main.async {
                         self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                     }
@@ -247,18 +263,23 @@ class HomeFeedViewModel: ObservableObject {
             let data = try JSONEncoder().encode(videos)
             UserDefaults.standard.set(data, forKey: homeFeedCacheKey)
             UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: homeFeedCacheDateKey)
+            print("Cached \(videos.count) videos.")
         } catch {
-            print("Failed to cache home feed videos: \(error)")
+            print("Failed to cache home feed videos: \(error.localizedDescription)")
         }
     }
 
     private func loadCachedHomeFeedVideos() -> [CachedYouTubeVideo]? {
-        guard let data = UserDefaults.standard.data(forKey: homeFeedCacheKey) else { return nil }
+        guard let data = UserDefaults.standard.data(forKey: homeFeedCacheKey) else {
+            print("No cached videos found.")
+            return nil
+        }
         do {
             let videos = try JSONDecoder().decode([CachedYouTubeVideo].self, from: data)
+            print("Loaded \(videos.count) cached videos.")
             return videos
         } catch {
-            print("Failed to decode cached home feed videos: \(error)")
+            print("Failed to decode cached home feed videos: \(error.localizedDescription)")
             return nil
         }
     }
@@ -266,10 +287,58 @@ class HomeFeedViewModel: ObservableObject {
     private func isCacheExpired() -> Bool {
         let lastFetchTime = UserDefaults.standard.double(forKey: homeFeedCacheDateKey)
         guard lastFetchTime > 0 else {
-            return true // no cache date found
+            print("Cache date not found. Cache is expired.")
+            return true // No cache date found
         }
         let now = Date().timeIntervalSince1970
-        return now - lastFetchTime > cacheDuration
+        let expired = now - lastFetchTime > cacheDuration
+        print("Cache expired: \(expired)")
+        return expired
+    }
+    
+    private func handleResponse(
+        data: Data?,
+        response: URLResponse?,
+        error: Error?,
+        onFailure: @escaping () -> Void
+    ) -> Data? {
+        if let error = error {
+            print("Error: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.currentAlert = .apiError
+            }
+            onFailure()
+            return nil
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            print("Invalid response.")
+            DispatchQueue.main.async {
+                self.currentAlert = .apiError
+            }
+            onFailure()
+            return nil
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            print("HTTP Status Code: \(httpResponse.statusCode)")
+            DispatchQueue.main.async {
+                self.currentAlert = .apiError
+            }
+            onFailure()
+            return nil
+        }
+
+        guard let data = data else {
+            print("No data received.")
+            DispatchQueue.main.async {
+                self.currentAlert = .apiError
+            }
+            onFailure()
+            return nil
+        }
+
+        return data
     }
 }
 
@@ -277,6 +346,10 @@ class HomeFeedViewModel: ObservableObject {
 
 struct SubscriptionListResponse: Decodable {
     let items: [SubscriptionItem]
+}
+
+struct SubscriptionResourceID: Decodable {
+    let channelId: String
 }
 
 struct ChannelContentResponse: Decodable {
