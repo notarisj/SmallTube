@@ -1,3 +1,10 @@
+//
+//  SettingsView.swift
+//  SmallTube
+//
+//  Created by John Notaris on 12/12/24.
+//
+
 import SwiftUI
 import CommonCrypto
 

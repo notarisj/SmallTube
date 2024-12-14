@@ -1,3 +1,10 @@
+//
+//  YouTubeViewModel.swift
+//  SmallTube
+//
+//  Created by John Notaris on 12/12/24.
+//
+
 import Foundation
 import SwiftUI
 
