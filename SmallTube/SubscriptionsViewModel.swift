@@ -31,10 +31,11 @@ class SubscriptionsViewModel: ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: "countryCode") }
     }
 
-    func loadSubscriptions(token: String?, authManager: AuthManager) {
+    func loadSubscriptions(token: String?, completion: @escaping ([YouTubeChannel]) -> Void) {
         guard let token = token else {
             DispatchQueue.main.async {
                 self.currentAlert = .apiError
+                completion([])
             }
             return
         }
@@ -42,43 +43,42 @@ class SubscriptionsViewModel: ObservableObject {
         guard !apiKey.isEmpty else {
             DispatchQueue.main.async {
                 self.currentAlert = .apiError
+                completion([])
             }
             return
         }
-        
+
         // Check cache
         if let cachedSubs = loadCachedSubscriptions(), !cachedSubs.isEmpty, !isCacheExpired() {
             DispatchQueue.main.async {
                 self.subscriptions = cachedSubs
+                completion(cachedSubs)
             }
             return
         }
 
         let urlString = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=250&key=\(apiKey)"
-        
-        guard let url = URL(string: urlString) else { return }
+        guard let url = URL(string: urlString) else {
+            completion([])
+            return
+        }
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            self.handleSubscriptionResponse(data: data, response: response, error: error, token: token, authManager: authManager)
-        }.resume()
-    }
-    
-    private func handleSubscriptionResponse(data: Data?, response: URLResponse?, error: Error?, token: String, authManager: AuthManager) {
-        guard let data = data else { return }
 
-        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
-            // Token invalid or expired, refresh
-            DispatchQueue.main.async {
-                authManager.refreshAccessToken { success in
-                    if success, let newToken = authManager.userToken {
-                        self.loadSubscriptions(token: newToken, authManager: authManager)
-                    } else {
-                        self.currentAlert = .apiError
-                    }
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            self.handleSubscriptionResponse(data: data, response: response, error: error) { fetchedChannels in
+                DispatchQueue.main.async {
+                    self.subscriptions = fetchedChannels
+                    self.cacheSubscriptions(fetchedChannels)
+                    completion(fetchedChannels)
                 }
             }
+        }.resume()
+    }
+
+    private func handleSubscriptionResponse(data: Data?, response: URLResponse?, error: Error?, completion: @escaping ([YouTubeChannel]) -> Void) {
+        guard let data = data else {
+            completion([])
             return
         }
 
@@ -92,10 +92,7 @@ class SubscriptionsViewModel: ObservableObject {
                     thumbnailURL: item.snippet.thumbnails.default.url
                 )
             }
-            DispatchQueue.main.async {
-                self.subscriptions = channels
-                self.cacheSubscriptions(channels)
-            }
+            completion(channels)
         } catch {
             DispatchQueue.main.async {
                 self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)

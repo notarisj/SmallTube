@@ -33,7 +33,11 @@ struct SubscriptionsView: View {
                 }
             }
             .onAppear {
-                viewModel.loadSubscriptions(token: authManager.userToken, authManager: authManager)
+                viewModel.loadSubscriptions(token: authManager.userToken) { subscriptions in
+                    DispatchQueue.main.async {
+                        viewModel.subscriptions = subscriptions
+                    }
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

@@ -14,7 +14,9 @@ class HomeFeedViewModel: ObservableObject {
 
     private let homeFeedCacheKey = "homeFeedVideosCacheKey"
     private let homeFeedCacheDateKey = "homeFeedVideosCacheDateKey"
-    private let cacheDuration: TimeInterval = 9009 // 15 minutes
+    private let cacheDuration: TimeInterval = 900 // 15 minutes
+
+    private let subscriptionsViewModel = SubscriptionsViewModel() // Fetch subscriptions
 
     var apiKey: String {
         get { UserDefaults.standard.string(forKey: "apiKey") ?? "" }
@@ -48,7 +50,7 @@ class HomeFeedViewModel: ObservableObject {
             return
         }
 
-        // Check cache first
+        // Step 1: Check for cached videos
         if let cachedVideos = loadCachedHomeFeedVideos(), !cachedVideos.isEmpty, !isCacheExpired() {
             print("Loaded \(cachedVideos.count) videos from cache.")
             DispatchQueue.main.async {
@@ -58,11 +60,10 @@ class HomeFeedViewModel: ObservableObject {
             return
         }
 
-        // Fetch subscriptions first
+        // Step 2: Fetch subscriptions first
         print("Fetching subscriptions...")
-        fetchSubscriptions(token: token) { channelIds in
-            print("Fetched channel IDs: \(channelIds)")
-            guard !channelIds.isEmpty else {
+        subscriptionsViewModel.loadSubscriptions(token: token) { subscriptions in
+            guard !subscriptions.isEmpty else {
                 print("No subscriptions found.")
                 DispatchQueue.main.async {
                     self.videos = []
@@ -71,13 +72,13 @@ class HomeFeedViewModel: ObservableObject {
                 return
             }
 
-            // Fetch videos using the 'videos' endpoint with batch requests
-            self.fetchVideos(from: channelIds) { fetchedVideos in
-                print("Fetched \(fetchedVideos.count) videos from subscriptions.")
+            // Step 3: Fetch videos for the subscriptions
+            print("Fetching videos for subscriptions...")
+            self.fetchVideos(from: subscriptions.map { $0.id }) { fetchedVideos in
                 DispatchQueue.main.async {
                     self.videos = fetchedVideos
-                    self.cacheHomeFeedVideos(self.videos)
-                    self.currentAlert = self.videos.isEmpty ? .noResults : nil
+                    self.cacheHomeFeedVideos(fetchedVideos)
+                    self.currentAlert = fetchedVideos.isEmpty ? .noResults : nil
                 }
             }
         }
