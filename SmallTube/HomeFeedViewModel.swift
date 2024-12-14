@@ -60,7 +60,7 @@ class HomeFeedViewModel: ObservableObject {
             return
         }
 
-        // Step 2: Fetch subscriptions first
+        // Step 2: Fetch subscriptions
         print("Fetching subscriptions...")
         subscriptionsViewModel.loadSubscriptions(token: token) { subscriptions in
             guard !subscriptions.isEmpty else {
@@ -72,9 +72,12 @@ class HomeFeedViewModel: ObservableObject {
                 return
             }
 
-            // Step 3: Fetch videos for the subscriptions
-            print("Fetching videos for subscriptions...")
-            self.fetchVideos(from: subscriptions.map { $0.id }) { fetchedVideos in
+            // Step 3: Select 15 random subscriptions
+            let selectedSubscriptions = Array(subscriptions.shuffled().prefix(15))
+
+            // Step 4: Fetch videos for the selected subscriptions
+            print("Fetching videos for selected subscriptions...")
+            self.fetchVideos(from: selectedSubscriptions.map { $0.id }) { fetchedVideos in
                 DispatchQueue.main.async {
                     self.videos = fetchedVideos
                     self.cacheHomeFeedVideos(fetchedVideos)
@@ -260,42 +263,42 @@ class HomeFeedViewModel: ObservableObject {
     // MARK: - Caching Methods
 
     private func cacheHomeFeedVideos(_ videos: [CachedYouTubeVideo]) {
-        do {
-            let data = try JSONEncoder().encode(videos)
-            UserDefaults.standard.set(data, forKey: homeFeedCacheKey)
-            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: homeFeedCacheDateKey)
-            print("Cached \(videos.count) videos.")
-        } catch {
-            print("Failed to cache home feed videos: \(error.localizedDescription)")
-        }
-    }
+       do {
+           let data = try JSONEncoder().encode(videos)
+           UserDefaults.standard.set(data, forKey: homeFeedCacheKey)
+           UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: homeFeedCacheDateKey)
+           print("Cached \(videos.count) videos.")
+       } catch {
+           print("Failed to cache home feed videos: \(error.localizedDescription)")
+       }
+   }
 
-    private func loadCachedHomeFeedVideos() -> [CachedYouTubeVideo]? {
-        guard let data = UserDefaults.standard.data(forKey: homeFeedCacheKey) else {
-            print("No cached videos found.")
-            return nil
-        }
-        do {
-            let videos = try JSONDecoder().decode([CachedYouTubeVideo].self, from: data)
-            print("Loaded \(videos.count) cached videos.")
-            return videos
-        } catch {
-            print("Failed to decode cached home feed videos: \(error.localizedDescription)")
-            return nil
-        }
-    }
+   private func loadCachedHomeFeedVideos() -> [CachedYouTubeVideo]? {
+       guard let data = UserDefaults.standard.data(forKey: homeFeedCacheKey) else {
+           print("No cached videos found.")
+           return nil
+       }
+       do {
+           let videos = try JSONDecoder().decode([CachedYouTubeVideo].self, from: data)
+           print("Loaded \(videos.count) cached videos.")
+           return videos
+       } catch {
+           print("Failed to decode cached home feed videos: \(error.localizedDescription)")
+           return nil
+       }
+   }
 
-    private func isCacheExpired() -> Bool {
-        let lastFetchTime = UserDefaults.standard.double(forKey: homeFeedCacheDateKey)
-        guard lastFetchTime > 0 else {
-            print("Cache date not found. Cache is expired.")
-            return true // No cache date found
-        }
-        let now = Date().timeIntervalSince1970
-        let expired = now - lastFetchTime > cacheDuration
-        print("Cache expired: \(expired)")
-        return expired
-    }
+   private func isCacheExpired() -> Bool {
+       let lastFetchTime = UserDefaults.standard.double(forKey: homeFeedCacheDateKey)
+       guard lastFetchTime > 0 else {
+           print("Cache date not found. Cache is expired.")
+           return true // No cache date found
+       }
+       let now = Date().timeIntervalSince1970
+       let expired = now - lastFetchTime > cacheDuration
+       print("Cache expired: \(expired)")
+       return expired
+   }
     
     private func handleResponse(
         data: Data?,
