@@ -10,46 +10,50 @@ import SwiftUI
 struct SubscriptionsView: View {
     @StateObject var viewModel = SubscriptionsViewModel()
     @EnvironmentObject var authManager: AuthManager
+    
+    // Access the horizontal size class from the environment
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     var body: some View {
-        NavigationView {
-            List(viewModel.subscriptions) { channel in
-                NavigationLink(destination: ChannelVideosView(channel: channel)) {
-                    HStack {
-                        AsyncImage(url: channel.thumbnailURL)
-                            .frame(width: 50, height: 50)
-                            .clipShape(Circle())
-                        VStack(alignment: .leading) {
-                            Text(channel.title)
-                                .font(.headline)
-                                .lineLimit(2)
-                                .truncationMode(.tail)
-                            Text(channel.description)
-                                .font(.subheadline)
-                                .lineLimit(2)
-                                .truncationMode(.tail)
-                        }
+        List(viewModel.subscriptions) { channel in
+            NavigationLink(destination: ChannelVideosView(channel: channel)) {
+                HStack {
+                    AsyncImage(url: channel.thumbnailURL)
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                    VStack(alignment: .leading) {
+                        Text(channel.title)
+                            .font(.headline)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                        Text(channel.description)
+                            .font(.subheadline)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
                     }
                 }
             }
-            .onAppear {
-                viewModel.loadSubscriptions(token: authManager.userToken) { subscriptions in
-                    DispatchQueue.main.async {
-                        viewModel.subscriptions = subscriptions
-                    }
+        }
+        .onAppear {
+            viewModel.loadSubscriptions(token: authManager.userToken) { subscriptions in
+                DispatchQueue.main.async {
+                    viewModel.subscriptions = subscriptions
                 }
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+        }
+        .navigationTitle("Subscriptions")
+        .toolbar {
+            // Show toolbar items only when horizontal size class is compact (e.g., iPhone)
+            if horizontalSizeClass == .compact {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gear")
                     }
                 }
             }
-            .navigationTitle("Subscriptions")
-            .alert(item: $viewModel.currentAlert) { alertType in
-                AlertBuilder.buildAlert(for: alertType)
-            }
+        }
+        .alert(item: $viewModel.currentAlert) { alertType in
+            AlertBuilder.buildAlert(for: alertType)
         }
     }
 }

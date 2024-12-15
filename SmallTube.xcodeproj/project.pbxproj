@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0519A9532D064F6B00ABE3AE /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9522D064F6700ABE3AE /* HomeView.swift */; };
 		0519A9552D064F8400ABE3AE /* TrendingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9542D064F8300ABE3AE /* TrendingView.swift */; };
 		0519A9572D064F9500ABE3AE /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9562D064F9400ABE3AE /* SearchView.swift */; };
 		0519A9592D06E1E100ABE3AE /* Countries.json in Resources */ = {isa = PBXBuildFile; fileRef = 0519A9582D06E1DF00ABE3AE /* Countries.json */; };
@@ -25,6 +24,7 @@
 		0519A97A2D0A29E300ABE3AE /* ErrorResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9792D0A29E000ABE3AE /* ErrorResponse.swift */; };
 		0519A97C2D0AC57600ABE3AE /* ChannelVideosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A97B2D0AC57500ABE3AE /* ChannelVideosView.swift */; };
 		0519A97E2D0AC58200ABE3AE /* ChannelVideosViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A97D2D0AC58000ABE3AE /* ChannelVideosViewModel.swift */; };
+		054AB4BE2D0DF43400DFF7DA /* SidebarSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054AB4BD2D0DF43300DFF7DA /* SidebarSelection.swift */; };
 		054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */; };
 		054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34AB2BF02E98008E9B18 /* ContentView.swift */; };
 		054F34AE2BF02E9A008E9B18 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 054F34AD2BF02E9A008E9B18 /* Assets.xcassets */; };
@@ -36,7 +36,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0519A9522D064F6700ABE3AE /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		0519A9542D064F8300ABE3AE /* TrendingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendingView.swift; sourceTree = "<group>"; };
 		0519A9562D064F9400ABE3AE /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		0519A9582D06E1DF00ABE3AE /* Countries.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Countries.json; sourceTree = "<group>"; };
@@ -55,6 +54,7 @@
 		0519A9792D0A29E000ABE3AE /* ErrorResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorResponse.swift; sourceTree = "<group>"; };
 		0519A97B2D0AC57500ABE3AE /* ChannelVideosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelVideosView.swift; sourceTree = "<group>"; };
 		0519A97D2D0AC58000ABE3AE /* ChannelVideosViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelVideosViewModel.swift; sourceTree = "<group>"; };
+		054AB4BD2D0DF43300DFF7DA /* SidebarSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarSelection.swift; sourceTree = "<group>"; };
 		054F34A62BF02E98008E9B18 /* SmallTube.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmallTube.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallTubeApp.swift; sourceTree = "<group>"; };
 		054F34AB2BF02E98008E9B18 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -96,6 +96,7 @@
 		054F34A82BF02E98008E9B18 /* SmallTube */ = {
 			isa = PBXGroup;
 			children = (
+				054AB4BD2D0DF43300DFF7DA /* SidebarSelection.swift */,
 				0519A97D2D0AC58000ABE3AE /* ChannelVideosViewModel.swift */,
 				0519A97B2D0AC57500ABE3AE /* ChannelVideosView.swift */,
 				0519A9792D0A29E000ABE3AE /* ErrorResponse.swift */,
@@ -114,7 +115,6 @@
 				0519A9582D06E1DF00ABE3AE /* Countries.json */,
 				0519A9562D064F9400ABE3AE /* SearchView.swift */,
 				0519A9542D064F8300ABE3AE /* TrendingView.swift */,
-				0519A9522D064F6700ABE3AE /* HomeView.swift */,
 				054F34A92BF02E98008E9B18 /* SmallTubeApp.swift */,
 				054F34AB2BF02E98008E9B18 /* ContentView.swift */,
 				054F34AD2BF02E9A008E9B18 /* Assets.xcassets */,
@@ -223,8 +223,8 @@
 				0519A9622D0793A800ABE3AE /* YouTubeChannel.swift in Sources */,
 				054F34BC2BF02F01008E9B18 /* YouTubeViewModel.swift in Sources */,
 				0519A9702D08E37300ABE3AE /* HomeFeedViewModel.swift in Sources */,
+				054AB4BE2D0DF43400DFF7DA /* SidebarSelection.swift in Sources */,
 				054F34AC2BF02E98008E9B18 /* ContentView.swift in Sources */,
-				0519A9532D064F6B00ABE3AE /* HomeView.swift in Sources */,
 				054F34AA2BF02E98008E9B18 /* SmallTubeApp.swift in Sources */,
 				0519A9782D0A29D000ABE3AE /* ErrorHandler.swift in Sources */,
 				0519A9682D07A13700ABE3AE /* YouTubeAPIVideo.swift in Sources */,

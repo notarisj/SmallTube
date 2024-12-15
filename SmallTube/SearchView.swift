@@ -13,80 +13,79 @@ struct SearchView: View {
     @State var showSearchView: Bool = true
     
     var body: some View {
-        NavigationView {
-            VStack {
-                if showSearchView {
-                    List(viewModel.videos) { video in
-                        NavigationLink(destination: VideoPlayerView(video: video)) {
-                            HStack {
-                                if let url = URL(string: video.thumbnailURL.absoluteString) {
-                                    AsyncImage(url: url)
-                                }
-                                
-                                VStack(alignment: .leading) {
-                                    Text(video.title)
-                                        .font(.headline)
-                                        .lineLimit(2)
-                                        .truncationMode(.tail)
-                                    Text(video.description)
-                                        .font(.subheadline)
-                                        .lineLimit(3)
-                                        .truncationMode(.tail)
-                                }
+        VStack {
+            if showSearchView {
+                List(viewModel.videos) { video in
+                    NavigationLink(destination: VideoPlayerView(video: video)) {
+                        HStack {
+                            if let url = URL(string: video.thumbnailURL.absoluteString) {
+                                AsyncImage(url: url)
                             }
-                        }
-                    }
-                    .searchable(text: $query, prompt: "Search") {
-                        ForEach(viewModel.searchSuggestions(query: query), id: \.self) { suggestion in
-                            Text(suggestion).onTapGesture {
-                                query = suggestion
-                                viewModel.searchVideos(query: query)
+                            
+                            VStack(alignment: .leading) {
+                                Text(video.title)
+                                    .font(.headline)
+                                    .lineLimit(2)
+                                    .truncationMode(.tail)
+                                Text(video.description)
+                                    .font(.subheadline)
+                                    .lineLimit(3)
+                                    .truncationMode(.tail)
                             }
-                        }
-                        .onDelete(perform: viewModel.deleteSearches)
-                    }
-                    .onSubmit(of: .search) {
-                        viewModel.searchVideos(query: query.trimmingCharacters(in: .whitespacesAndNewlines))
-                        showSearchView = false
-                    }
-                } else {
-                    List(viewModel.videos) { video in
-                        NavigationLink(destination: VideoPlayerView(video: video)) {
-                            HStack {
-                                if let url = URL(string: video.thumbnailURL.absoluteString) {
-                                    AsyncImage(url: url)
-                                }
-                                
-                                VStack(alignment: .leading) {
-                                    Text(video.title)
-                                        .font(.headline)
-                                        .lineLimit(2)
-                                        .truncationMode(.tail)
-                                    Text(video.description)
-                                        .font(.subheadline)
-                                        .lineLimit(3)
-                                        .truncationMode(.tail)
-                                }
-                            }
-                        }
-                    }
-                    .alert(item: $viewModel.currentAlert) { alertType in
-                        AlertBuilder.buildAlert(for: alertType)
-                    }
-                }
-            }
-            .toolbar {
-                if !showSearchView {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(action: {
-                            showSearchView = true
-                        }) {
-                            Image(systemName: "magnifyingglass")
                         }
                     }
                 }
+                .searchable(text: $query, prompt: "Search") {
+                    ForEach(viewModel.searchSuggestions(query: query), id: \.self) { suggestion in
+                        Text(suggestion).onTapGesture {
+                            query = suggestion
+                            viewModel.searchVideos(query: query)
+                        }
+                    }
+                    .onDelete(perform: viewModel.deleteSearches)
+                }
+                .onSubmit(of: .search) {
+                    viewModel.searchVideos(query: query.trimmingCharacters(in: .whitespacesAndNewlines))
+                    showSearchView = false
+                }
+            } else {
+                List(viewModel.videos) { video in
+                    NavigationLink(destination: VideoPlayerView(video: video)) {
+                        HStack {
+                            if let url = URL(string: video.thumbnailURL.absoluteString) {
+                                AsyncImage(url: url)
+                            }
+                            
+                            VStack(alignment: .leading) {
+                                Text(video.title)
+                                    .font(.headline)
+                                    .lineLimit(2)
+                                    .truncationMode(.tail)
+                                Text(video.description)
+                                    .font(.subheadline)
+                                    .lineLimit(3)
+                                    .truncationMode(.tail)
+                            }
+                        }
+                    }
+                }
+                .alert(item: $viewModel.currentAlert) { alertType in
+                    AlertBuilder.buildAlert(for: alertType)
+                }
             }
-            .navigationTitle(query.isEmpty ? "SmallTube" : query)
         }
+        .toolbar {
+            // Conditionally show toolbar items only on iPhone
+            if UIDevice.current.userInterfaceIdiom != .pad && !showSearchView {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        showSearchView = true
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                    }
+                }
+            }
+        }
+        .navigationTitle(query.isEmpty ? "SmallTube" : query)
     }
 }

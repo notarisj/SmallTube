@@ -21,77 +21,75 @@ struct SettingsView: View {
     @State private var showSignOutAlert = false
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("User Authentication")) {
-                    if let token = authManager.userToken {
-                        if let name = authManager.userDisplayName {
-                            Text("Signed In: \(name)")
-                        } else {
-                            // If display name isn't fetched yet, show partial token or a placeholder
-                            Text("Signed In: \(token.prefix(10))...")
-                        }
-                        // Update the Sign Out button to show the confirmation alert
-                        Button("Sign Out") {
-                            showSignOutAlert = true
-                        }
-                        .foregroundColor(.red) // Optional: Make the sign-out button red to indicate caution
+        Form {
+            Section(header: Text("User Authentication")) {
+                if let token = authManager.userToken {
+                    if let name = authManager.userDisplayName {
+                        Text("Signed In: \(name)")
                     } else {
-                        Button("Sign In with Google") {
-                            authManager.startSignInFlow()
-                        }
+                        // If display name isn't fetched yet, show partial token or a placeholder
+                        Text("Signed In: \(token.prefix(10))...")
                     }
-                }
-                
-                Section(header: Text("API Key")) {
-                    TextField("Enter API Key", text: $apiKey)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                }
-                
-                Section(header: Text("Results Count")) {
-                    Picker("Results Count", selection: $resultsCount) {
-                        ForEach(1...100, id: \.self) { count in
-                            Text("\(count)")
-                        }
+                    // Update the Sign Out button to show the confirmation alert
+                    Button("Sign Out") {
+                        showSignOutAlert = true
                     }
-                }
-                
-                Section(header: Text("Country Code")) {
-                    Menu {
-                        ForEach(countryStore.countries) { country in
-                            Button(country.name) {
-                                countryCode = country.code
-                            }
-                        }
-                    } label: {
-                        HStack {
-                            Text("Selected: \(countryCode)")
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                }
-                
-                Section {
-                    Button("Save") {
-                        self.presentationMode.wrappedValue.dismiss()
+                    .foregroundColor(.red) // Optional: Make the sign-out button red to indicate caution
+                } else {
+                    Button("Sign In with Google") {
+                        authManager.startSignInFlow()
                     }
                 }
             }
-            .navigationBarTitle("Settings")
-            // Attach the alert to the Form or any parent view
-            .alert(isPresented: $showSignOutAlert) {
-                Alert(
-                    title: Text("Confirm Sign Out"),
-                    message: Text("Are you sure you want to sign out?"),
-                    primaryButton: .destructive(Text("Yes")) {
-                        authManager.signOut()
-                    },
-                    secondaryButton: .cancel(Text("No"))
-                )
+            
+            Section(header: Text("API Key")) {
+                TextField("Enter API Key", text: $apiKey)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
             }
+            
+            Section(header: Text("Results Count")) {
+                Picker("Results Count", selection: $resultsCount) {
+                    ForEach(1...100, id: \.self) { count in
+                        Text("\(count)")
+                    }
+                }
+            }
+            
+            Section(header: Text("Country Code")) {
+                Menu {
+                    ForEach(countryStore.countries) { country in
+                        Button(country.name) {
+                            countryCode = country.code
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text("Selected: \(countryCode)")
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            
+            Section {
+                Button("Save") {
+                    self.presentationMode.wrappedValue.dismiss()
+                }
+            }
+        }
+        .navigationTitle("Settings")
+        // Attach the alert to the Form or any parent view
+        .alert(isPresented: $showSignOutAlert) {
+            Alert(
+                title: Text("Confirm Sign Out"),
+                message: Text("Are you sure you want to sign out?"),
+                primaryButton: .destructive(Text("Yes")) {
+                    authManager.signOut()
+                },
+                secondaryButton: .cancel(Text("No"))
+            )
         }
     }
 }
