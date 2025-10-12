@@ -11,6 +11,8 @@ import CommonCrypto
 import SwiftUI
 
 class AuthManager: NSObject, ObservableObject {
+    static let shared = AuthManager()
+
     @Published var userToken: String? {
         didSet {
             UserDefaults.standard.set(userToken, forKey: "userToken")
@@ -42,7 +44,7 @@ class AuthManager: NSObject, ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: "refreshToken") }
     }
 
-    private let clientID = "CLIENT_ID"
+    private let clientID = "749795843940-854qs9malflls9b1dllks8p66ctv1jnd.apps.googleusercontent.com"
     private let redirectURI = "com.notaris.SmallTube:/oauthredirect"
     private let authorizationEndpoint = "https://accounts.google.com/o/oauth2/v2/auth"
     private let tokenEndpoint = "https://oauth2.googleapis.com/token"
@@ -56,6 +58,14 @@ class AuthManager: NSObject, ObservableObject {
     override init() {
         super.init()
         userToken = UserDefaults.standard.string(forKey: "userToken")
+        // Attempt to refresh token on init if we have a refresh token but no access token
+        if userToken == nil, refreshToken != nil {
+            refreshAccessToken { success in
+                if !success {
+                    self.signOut()
+                }
+            }
+        }
     }
     
     func signOut() {
@@ -126,7 +136,6 @@ class AuthManager: NSObject, ObservableObject {
                         if let rt = json["refresh_token"] as? String {
                             self.refreshToken = rt
                         }
-                        // As soon as we set userToken, fetchUserDisplayName() will be called automatically.
                     }
                 }
             } catch {
@@ -154,9 +163,12 @@ class AuthManager: NSObject, ObservableObject {
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data else {
-                completion(false)
+                DispatchQueue.main.async {
+                    completion(false)
+                }
                 return
             }
+            
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let newAccessToken = json["access_token"] as? String {
@@ -165,11 +177,15 @@ class AuthManager: NSObject, ObservableObject {
                         completion(true)
                     }
                 } else {
-                    completion(false)
+                    DispatchQueue.main.async {
+                        completion(false)
+                    }
                 }
             } catch {
                 print("Failed to refresh token: \(error)")
-                completion(false)
+                DispatchQueue.main.async {
+                    completion(false)
+                }
             }
         }.resume()
     }
@@ -195,6 +211,16 @@ class AuthManager: NSObject, ObservableObject {
                 print("Failed to parse channel info: \(error)")
             }
         }.resume()
+    }
+    
+    func ensureValidToken(completion: @escaping (Bool) -> Void) {
+        if let _ = userToken {
+            completion(true)
+        } else if refreshToken != nil {
+            refreshAccessToken(completion: completion)
+        } else {
+            completion(false)
+        }
     }
     
     private func getQueryParam(from url: URL, param: String) -> String? {
@@ -226,6 +252,43 @@ class AuthManager: NSObject, ObservableObject {
             .replacingOccurrences(of: "=", with: "")
         
         return base64Url
+    }
+    
+    func makeAuthenticatedRequest(url: URL, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
+        guard let token = userToken else {
+            completion(nil, nil, NSError(domain: "AuthError", code: 401, userInfo: [NSLocalizedDescriptionKey: "No token available"]))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            // Check if we got a 401 (unauthorized) response
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
+                // Token expired, try to refresh
+                self?.refreshAccessToken { success in
+                    if success {
+                        // Retry the request with new token
+                        var retryRequest = URLRequest(url: url)
+                        retryRequest.setValue("Bearer \(self?.userToken ?? "")", forHTTPHeaderField: "Authorization")
+                        
+                        URLSession.shared.dataTask(with: retryRequest) { retryData, retryResponse, retryError in
+                            completion(retryData, retryResponse, retryError)
+                        }.resume()
+                    } else {
+                        // Refresh failed, sign out user
+                        DispatchQueue.main.async {
+                            self?.signOut()
+                        }
+                        completion(nil, response, error)
+                    }
+                }
+            } else {
+                // Normal response, return as-is
+                completion(data, response, error)
+            }
+        }.resume()
     }
 }
 

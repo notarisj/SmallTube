@@ -94,10 +94,7 @@ class HomeFeedViewModel: ObservableObject {
             return
         }
 
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        AuthManager.shared.makeAuthenticatedRequest(url: url) { data, response, error in
             guard let data = self.handleResponse(data: data, response: response, error: error, onFailure: {
                 completion([])
             }) else {
@@ -116,7 +113,7 @@ class HomeFeedViewModel: ObservableObject {
                 }
                 completion([])
             }
-        }.resume()
+        }
     }
 
     private func fetchVideos(from channelIds: [String], completion: @escaping ([CachedYouTubeVideo]) -> Void) {
@@ -152,7 +149,7 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     private func getUploadsPlaylistId(for channelId: String, completion: @escaping (String?) -> Void) {
-        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=\(channelId)&key=\(apiKey)") else {
+        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/channels?part=contentDetails&type=video&videoDuration=long&id=\(channelId)&key=\(apiKey)") else {
             print("Invalid URL for fetching uploads playlist ID for channel: \(channelId)")
             completion(nil)
             return
@@ -185,7 +182,7 @@ class HomeFeedViewModel: ObservableObject {
     }
 
     private func fetchVideosFromPlaylist(playlistId: String, maxResults: Int, completion: @escaping ([CachedYouTubeVideo]) -> Void) {
-        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=\(playlistId)&maxResults=\(maxResults)&key=\(apiKey)") else {
+        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&type=video&videoDuration=long&playlistId=\(playlistId)&maxResults=\(maxResults)&key=\(apiKey)") else {
             print("Invalid URL for fetching videos from playlist: \(playlistId)")
             completion([])
             return

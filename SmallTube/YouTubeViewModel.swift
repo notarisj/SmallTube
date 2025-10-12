@@ -86,7 +86,7 @@ class YouTubeViewModel: ObservableObject {
         }
         
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=\(encodedQuery)&maxResults=\(resultsCount)&key=\(apiKey)&type=video"
+        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=long&q=\(encodedQuery)&maxResults=\(resultsCount)&key=\(apiKey)&type=video"
         guard let url = URL(string: urlString) else { return }
         
         URLSession.shared.dataTask(with: url) { (data, response, error) in
