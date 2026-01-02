@@ -10,6 +10,9 @@ import SwiftUI
 struct TrendingView: View {
     @StateObject var viewModel = YouTubeViewModel()
     
+    // Access the horizontal size class from the environment
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    
     var body: some View {
         List(viewModel.videos) { video in
             NavigationLink(destination: VideoPlayerView(video: video)) {
@@ -35,6 +38,16 @@ struct TrendingView: View {
             viewModel.loadTrendingVideos()
         }
         .navigationTitle("Trending")
+        .toolbar {
+            // Show toolbar items only when horizontal size class is compact (e.g., iPhone)
+            if UIDevice.current.userInterfaceIdiom != .pad {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: SettingsView()) {
+                        Image(systemName: "gear")
+                    }
+                }
+            }
+        }
         .alert(item: $viewModel.currentAlert) { alertType in
             AlertBuilder.buildAlert(for: alertType)
         }

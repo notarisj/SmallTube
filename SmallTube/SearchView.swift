@@ -76,12 +76,20 @@ struct SearchView: View {
         }
         .toolbar {
             // Conditionally show toolbar items only on iPhone
-            if UIDevice.current.userInterfaceIdiom != .pad && !showSearchView {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        showSearchView = true
-                    }) {
-                        Image(systemName: "magnifyingglass")
+            if UIDevice.current.userInterfaceIdiom != .pad {
+                if !showSearchView {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            showSearchView = true
+                        }) {
+                            Image(systemName: "magnifyingglass")
+                        }
+                    }
+                }
+                // Add settings icon
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: SettingsView()) {
+                        Image(systemName: "gear")
                     }
                 }
             }
