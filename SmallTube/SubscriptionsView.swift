@@ -10,6 +10,7 @@ import SwiftUI
 struct SubscriptionsView: View {
     @StateObject var viewModel = SubscriptionsViewModel()
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var appState: AppState
     
     // Access the horizontal size class from the environment
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
@@ -44,9 +45,11 @@ struct SubscriptionsView: View {
         .navigationTitle("Subscriptions")
         .toolbar {
             // Show toolbar items only when horizontal size class is compact (e.g., iPhone)
-            if horizontalSizeClass == .compact {
+            if UIDevice.current.userInterfaceIdiom != .pad {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
+                    Button(action: {
+                        appState.showSettings = true
+                    }) {
                         Image(systemName: "gear")
                     }
                 }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SearchView: View {
     @StateObject var viewModel = YouTubeViewModel()
+    @EnvironmentObject var appState: AppState
     @State var query: String = ""
     @State var showSearchView: Bool = true
     
@@ -88,7 +89,9 @@ struct SearchView: View {
                 }
                 // Add settings icon
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
+                    Button(action: {
+                        appState.showSettings = true
+                    }) {
                         Image(systemName: "gear")
                     }
                 }

@@ -94,6 +94,8 @@ struct iPadSidebarView: View {
 }
 
 struct iPhoneTabView: View {
+    @EnvironmentObject var appState: AppState
+
     var body: some View {
         TabView {
             NavigationView {
@@ -126,6 +128,11 @@ struct iPhoneTabView: View {
             }
             .tabItem {
                 Label("Subscriptions", systemImage: "person.2")
+            }
+        }
+        .sheet(isPresented: $appState.showSettings) {
+            NavigationView {
+                SettingsView()
             }
         }
     }

@@ -12,7 +12,9 @@ struct TrendingView: View {
     
     // Access the horizontal size class from the environment
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
-    
+    @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var appState: AppState
+
     var body: some View {
         List(viewModel.videos) { video in
             NavigationLink(destination: VideoPlayerView(video: video)) {
@@ -42,7 +44,9 @@ struct TrendingView: View {
             // Show toolbar items only when horizontal size class is compact (e.g., iPhone)
             if UIDevice.current.userInterfaceIdiom != .pad {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
+                    Button(action: {
+                        appState.showSettings = true
+                    }) {
                         Image(systemName: "gear")
                     }
                 }

@@ -76,6 +76,13 @@ struct SettingsView: View {
             // Save button removed as changes are autosaved via @AppStorage
         }
         .navigationTitle("Settings")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Done") {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }
+        }
         // Attach the alert to the Form or any parent view
         .alert(isPresented: $showSignOutAlert) {
             Alert(
