@@ -73,11 +73,7 @@ struct SettingsView: View {
                 }
             }
             
-            Section {
-                Button("Save") {
-                    self.presentationMode.wrappedValue.dismiss()
-                }
-            }
+            // Save button removed as changes are autosaved via @AppStorage
         }
         .navigationTitle("Settings")
         // Attach the alert to the Form or any parent view
