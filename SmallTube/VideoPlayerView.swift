@@ -35,9 +35,37 @@ struct WebView: UIViewRepresentable {
     @Binding var isLoading: Bool
     
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        // Configure WKWebView for YouTube embed playback
+        let configuration = WKWebViewConfiguration()
+        configuration.allowsInlineMediaPlayback = true
+        configuration.mediaTypesRequiringUserActionForPlayback = []
+        
+        let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
-        webView.load(URLRequest(url: url))
+        webView.scrollView.isScrollEnabled = false
+        webView.backgroundColor = .black
+        webView.isOpaque = false
+        
+        let embedUrl = "https://www.youtube.com/embed/\(url.lastPathComponent)?playsinline=1&autoplay=1&rel=0&modestbranding=1&origin=http://localhost"
+        
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body, html { margin: 0; padding: 0; background-color: black; height: 100%; overflow: hidden; }
+                iframe { width: 100%; height: 100%; border: 0; }
+            </style>
+        </head>
+        <body>
+            <iframe src="\(embedUrl)" width="100%" height="100%" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </body>
+        </html>
+        """
+        
+        webView.loadHTMLString(html, baseURL: URL(string: "http://localhost"))
+        
         return webView
     }
     
