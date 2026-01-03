@@ -14,19 +14,38 @@ struct VideoPlayerView: View {
     @State private var isLoading = true
     
     var body: some View {
-        ZStack {
-            WebView(url: URL(string: "https://www.youtube.com/embed/\(video.id)")!, isLoading: $isLoading)
-            if isLoading {
-                Color.black
-                VStack {
-                    ProgressView("Loading...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: .gray))
-                        .scaleEffect(2)
+        VStack(spacing: 0) {
+            // 1. Video Player Container (16:9 Aspect Ratio)
+            ZStack {
+                WebView(url: URL(string: "https://www.youtube.com/embed/\(video.id)")!, isLoading: $isLoading)
+                if isLoading {
+                    Color.black
+                    VStack {
+                        ProgressView("Loading...")
+                            .progressViewStyle(CircularProgressViewStyle(tint: .gray))
+                            .scaleEffect(2)
+                    }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(height: UIScreen.main.bounds.width * 9 / 16) // Force 16:9 height based on screen width
+            .background(Color.black)
+            
+            // 2. Scrollable Description Area
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(video.title)
+                        .font(.headline)
+                        .padding(.top)
+                    
+                    Text(video.description)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                }
+                .padding()
             }
         }
-        .edgesIgnoringSafeArea(.all)
+        .navigationTitle(video.title)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
