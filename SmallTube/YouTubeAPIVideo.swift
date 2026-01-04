@@ -13,9 +13,10 @@ struct YouTubeAPIVideo: Decodable {
     let description: String
     let thumbnailURL: URL
     let publishedAt: Date
+    let durationSeconds: Int?
     
     enum APIKeys: String, CodingKey {
-        case id, snippet
+        case id, snippet, contentDetails
     }
     
     enum IDKeys: String, CodingKey {
@@ -24,6 +25,10 @@ struct YouTubeAPIVideo: Decodable {
     
     enum SnippetKeys: String, CodingKey {
         case title, description, thumbnails, publishedAt
+    }
+    
+    enum ContentDetailsKeys: String, CodingKey {
+        case duration
     }
     
     enum ThumbnailKeys: String, CodingKey {
@@ -65,6 +70,44 @@ struct YouTubeAPIVideo: Decodable {
         let thumbnailContainer = try snippetContainer.nestedContainer(keyedBy: ThumbnailKeys.self, forKey: .thumbnails)
         let defaultThumbnailContainer = try thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail)
         self.thumbnailURL = try defaultThumbnailContainer.decode(URL.self, forKey: .url)
+        
+        // Decode `contentDetails` (optional, as search results don't have it unless requested or from videos endpoint)
+        if let contentDetailsContainer = try? container.nestedContainer(keyedBy: ContentDetailsKeys.self, forKey: .contentDetails),
+           let durationString = try? contentDetailsContainer.decode(String.self, forKey: .duration) {
+            self.durationSeconds = YouTubeAPIVideo.parseDuration(durationString)
+        } else {
+            self.durationSeconds = nil
+        }
+    }
+    
+    // Helper to parse ISO 8601 duration (e.g., PT1H30M15S) to seconds
+    private static func parseDuration(_ durationString: String) -> Int {
+        var duration = durationString
+        guard duration.hasPrefix("PT") else { return 0 }
+        duration.removeFirst(2)
+        
+        var hours = 0
+        var minutes = 0
+        var seconds = 0
+        
+        if let hIndex = duration.firstIndex(of: "H") {
+            let hString = duration[..<hIndex]
+            hours = Int(hString) ?? 0
+            duration.removeSubrange(..<duration.index(after: hIndex))
+        }
+        
+        if let mIndex = duration.firstIndex(of: "M") {
+            let mString = duration[..<mIndex]
+            minutes = Int(mString) ?? 0
+            duration.removeSubrange(..<duration.index(after: mIndex))
+        }
+        
+        if let sIndex = duration.firstIndex(of: "S") {
+            let sString = duration[..<sIndex]
+            seconds = Int(sString) ?? 0
+        }
+        
+        return (hours * 3600) + (minutes * 60) + seconds
     }
 }
 
@@ -81,5 +124,9 @@ extension String {
 }
 
 struct YouTubeResponse: Decodable {
+    let items: [YouTubeAPIVideo]
+}
+
+struct VideoListResponse: Decodable {
     let items: [YouTubeAPIVideo]
 }

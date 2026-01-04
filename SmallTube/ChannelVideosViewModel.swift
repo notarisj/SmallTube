@@ -96,26 +96,15 @@ class ChannelVideosViewModel: ObservableObject {
             guard let data = data else { return }
             
             do {
-                let detailsResponse = try JSONDecoder().decode(VideoDetailsResponse.self, from: data)
+                let videoResponse = try JSONDecoder().decode(VideoListResponse.self, from: data)
                 
                 // Filter videos > 1.5 minutes (90 seconds)
-                let validVideos = detailsResponse.items.filter { item in
-                    let duration = self.parseDuration(item.contentDetails.duration)
-                    return duration >= 90 // 1.5 minutes
+                let validVideos = videoResponse.items.filter { video in
+                    guard let duration = video.durationSeconds else { return true }
+                    return duration >= 180 // 1.5 minutes
                 }
                 
-                let formatter = ISO8601DateFormatter()
-                
-                let cachedVideos = validVideos.map { item in
-                    let date = formatter.date(from: item.snippet.publishedAt) ?? Date()
-                    return CachedYouTubeVideo(
-                        id: item.id,
-                        title: item.snippet.title,
-                        description: item.snippet.description,
-                        thumbnailURL: item.snippet.thumbnails.maxres?.url ?? item.snippet.thumbnails.high?.url ?? item.snippet.thumbnails.medium.url,
-                        publishedAt: date
-                    )
-                }
+                let cachedVideos = validVideos.map { CachedYouTubeVideo(from: $0) }
                 
                 DispatchQueue.main.async {
                     self.videos = cachedVideos
@@ -129,36 +118,7 @@ class ChannelVideosViewModel: ObservableObject {
         }.resume()
     }
     
-    // Helper to parse ISO 8601 duration (e.g., PT1H30M15S) to seconds
-    private func parseDuration(_ durationString: String) -> Int {
-        var duration = durationString
-        guard duration.hasPrefix("PT") else { return 0 }
-        duration.removeFirst(2)
-        
-        var hours = 0
-        var minutes = 0
-        var seconds = 0
-        
-        if let hIndex = duration.firstIndex(of: "H") {
-            let hString = duration[..<hIndex]
-            hours = Int(hString) ?? 0
-            duration.removeSubrange(..<duration.index(after: hIndex))
-        }
-        
-        if let mIndex = duration.firstIndex(of: "M") {
-            let mString = duration[..<mIndex]
-            minutes = Int(mString) ?? 0
-            duration.removeSubrange(..<duration.index(after: mIndex))
-        }
-        
-        if let sIndex = duration.firstIndex(of: "S") {
-            let sString = duration[..<sIndex]
-            seconds = Int(sString) ?? 0
-        }
-        
-        return (hours * 3600) + (minutes * 60) + seconds
-    }
-
+    
     // MARK: - Caching Methods
 
     private func cacheVideos(_ videos: [CachedYouTubeVideo], for channelId: String) {
@@ -199,33 +159,6 @@ class ChannelVideosViewModel: ObservableObject {
         return expired
     }
 }
+    
 
-// MARK: - Video Details Response Models
-// MARK: - Video Details Response Models
-struct VideoDetailsResponse: Decodable {
-    let items: [VideoDetailItem]
-}
-
-struct VideoDetailItem: Decodable {
-    let id: String
-    let snippet: VideoSnippet
-    let contentDetails: VideoContentDetails
-}
-
-struct VideoSnippet: Decodable {
-    let title: String
-    let description: String
-    let publishedAt: String
-    let thumbnails: VideoThumbnails
-}
-
-struct VideoContentDetails: Decodable {
-    let duration: String
-}
-
-struct VideoThumbnails: Decodable {
-    let medium: Thumbnail
-    let high: Thumbnail?
-    let maxres: Thumbnail?
-}
 

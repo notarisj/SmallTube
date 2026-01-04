@@ -190,7 +190,7 @@ class HomeFeedViewModel: ObservableObject {
         for batch in batches {
             group.enter()
             let ids = batch.joined(separator: ",")
-            guard let url = URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=\(ids)&key=\(apiKey)") else {
+            guard let url = URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=\(ids)&key=\(apiKey)") else {
                 print("Invalid URL for fetching video details for IDs: \(ids)")
                 group.leave()
                 continue
@@ -207,8 +207,17 @@ class HomeFeedViewModel: ObservableObject {
 
                 do {
                     let videoResponse = try JSONDecoder().decode(VideoListResponse.self, from: data)
-                    let cachedVideos = videoResponse.items.map { CachedYouTubeVideo(from: $0) }
-                    print("Fetched \(cachedVideos.count) video details for IDs: \(ids)")
+                    
+                    // Filter out videos shorter than 90 seconds (1.5 minutes)
+                    let validVideos = videoResponse.items.filter { video in
+                        guard let duration = video.durationSeconds else { return true } // Keep if duration unknown? Or strict filter?
+                        // Assuming filter means exclude known short videos.
+                        // YouTubeAPIVideo returns nil if duration missing.
+                        return duration >= 180
+                    }
+                    
+                    let cachedVideos = validVideos.map { CachedYouTubeVideo(from: $0) }
+                    print("Fetched \(cachedVideos.count) video details for IDs: \(ids) (Filtered from \(videoResponse.items.count))")
                     allVideos.append(contentsOf: cachedVideos)
                 } catch {
                     print("Decoding video details for IDs \(ids) failed: \(error.localizedDescription)")
@@ -346,6 +355,4 @@ struct ResourceID: Decodable {
     let videoId: String
 }
 
-struct VideoListResponse: Decodable {
-    let items: [YouTubeAPIVideo]
-}
+
