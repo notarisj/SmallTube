@@ -9,28 +9,26 @@ import SwiftUI
 
 struct ChannelVideosView: View {
     @StateObject var viewModel = ChannelVideosViewModel()
-    var channel: YouTubeChannel
+    var channelId: String
+    var channelTitle: String
 
     var body: some View {
         List {
             // Channel Info as the first entry in the list
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top, spacing: 16) {
-                    AsyncImage(url: channel.thumbnailURL)
-                        .frame(width: 80, height: 80)
-                        .clipShape(Circle())
-
+                    // Thumbnail not available from just ID/Title immediately
+                    // AsyncImage(url: channel.thumbnailURL) ...
+                    
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(channel.title)
+                        Text(channelTitle)
                             .font(.title2)
                             .fontWeight(.bold)
                             .lineLimit(2)
                             .truncationMode(.tail)
-
-                        Text(channel.description)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true) // Allow multi-line
+                        
+                        // Description not available
+                        // Text(channel.description) ...
                     }
                 }
                 .padding(.vertical, 8)
@@ -59,9 +57,10 @@ struct ChannelVideosView: View {
             }
         }
         .onAppear {
-            viewModel.loadVideos(for: channel)
+            let dummyChannel = YouTubeChannel(id: channelId, title: channelTitle, description: "", thumbnailURL: URL(string: "https://www.youtube.com")!)
+            viewModel.loadVideos(for: dummyChannel)
         }
-        .navigationTitle(channel.title)
+        .navigationTitle(channelTitle)
         .alert(item: $viewModel.currentAlert) { alertType in
             AlertBuilder.buildAlert(for: alertType)
         }

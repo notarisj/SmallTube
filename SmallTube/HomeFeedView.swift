@@ -9,7 +9,6 @@ import SwiftUI
 
 struct HomeFeedView: View {
     @StateObject var viewModel = HomeFeedViewModel()
-    @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var appState: AppState
     
     // Access the horizontal size class from the environment
@@ -38,7 +37,7 @@ struct HomeFeedView: View {
         }
         .navigationTitle("Home Feed")
         .onAppear {
-            viewModel.loadHomeFeed(token: authManager.userToken)
+            viewModel.loadHomeFeed(token: nil)
         }
         .toolbar {
             // Show toolbar items only when horizontal size class is compact (e.g., iPhone)

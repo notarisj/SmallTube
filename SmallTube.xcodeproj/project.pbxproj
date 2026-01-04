@@ -11,7 +11,6 @@
 		0519A9572D064F9500ABE3AE /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9562D064F9400ABE3AE /* SearchView.swift */; };
 		0519A9592D06E1E100ABE3AE /* Countries.json in Resources */ = {isa = PBXBuildFile; fileRef = 0519A9582D06E1DF00ABE3AE /* Countries.json */; };
 		0519A95B2D06E1F600ABE3AE /* Countries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A95A2D06E1F400ABE3AE /* Countries.swift */; };
-		0519A95E2D07935000ABE3AE /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A95D2D07934E00ABE3AE /* AuthManager.swift */; };
 		0519A9602D07939300ABE3AE /* SubscriptionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A95F2D07939100ABE3AE /* SubscriptionsViewModel.swift */; };
 		0519A9622D0793A800ABE3AE /* YouTubeChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9612D0793A600ABE3AE /* YouTubeChannel.swift */; };
 		0519A9642D0793B300ABE3AE /* SubscriptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0519A9632D0793B200ABE3AE /* SubscriptionsView.swift */; };
@@ -41,7 +40,6 @@
 		0519A9582D06E1DF00ABE3AE /* Countries.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Countries.json; sourceTree = "<group>"; };
 		0519A95A2D06E1F400ABE3AE /* Countries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Countries.swift; sourceTree = "<group>"; };
 		0519A95C2D078CB700ABE3AE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		0519A95D2D07934E00ABE3AE /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		0519A95F2D07939100ABE3AE /* SubscriptionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsViewModel.swift; sourceTree = "<group>"; };
 		0519A9612D0793A600ABE3AE /* YouTubeChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeChannel.swift; sourceTree = "<group>"; };
 		0519A9632D0793B200ABE3AE /* SubscriptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionsView.swift; sourceTree = "<group>"; };
@@ -109,7 +107,6 @@
 				0519A9632D0793B200ABE3AE /* SubscriptionsView.swift */,
 				0519A9612D0793A600ABE3AE /* YouTubeChannel.swift */,
 				0519A95F2D07939100ABE3AE /* SubscriptionsViewModel.swift */,
-				0519A95D2D07934E00ABE3AE /* AuthManager.swift */,
 				0519A95C2D078CB700ABE3AE /* Info.plist */,
 				0519A95A2D06E1F400ABE3AE /* Countries.swift */,
 				0519A9582D06E1DF00ABE3AE /* Countries.json */,
@@ -163,7 +160,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1530;
-				LastUpgradeCheck = 1530;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					054F34A52BF02E98008E9B18 = {
 						CreatedOnToolsVersion = 15.3;
@@ -207,7 +204,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				0519A95B2D06E1F600ABE3AE /* Countries.swift in Sources */,
-				0519A95E2D07935000ABE3AE /* AuthManager.swift in Sources */,
 				0519A97C2D0AC57600ABE3AE /* ChannelVideosView.swift in Sources */,
 				0519A9572D064F9500ABE3AE /* SearchView.swift in Sources */,
 				0519A9642D0793B300ABE3AE /* SubscriptionsView.swift in Sources */,
@@ -270,6 +266,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 77J7879XVY;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -293,6 +290,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -333,6 +331,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 77J7879XVY;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -349,6 +348,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -362,7 +362,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SmallTube/Preview Content\"";
-				DEVELOPMENT_TEAM = 77J7879XVY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SmallTube/Info.plist;
@@ -393,7 +392,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SmallTube/Preview Content\"";
-				DEVELOPMENT_TEAM = 77J7879XVY;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SmallTube/Info.plist;

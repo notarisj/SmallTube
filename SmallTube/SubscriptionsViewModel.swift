@@ -12,6 +12,16 @@ class SubscriptionsViewModel: ObservableObject {
     @Published var subscriptions: [YouTubeChannel] = []
     @Published var currentAlert: AlertType?
     
+    // Sort Option Persistence
+    @AppStorage("subscriptionsSortOption") var sortOption: SortOption = .az
+    
+    enum SortOption: String, CaseIterable, Identifiable {
+        case az = "A-Z"
+        case za = "Z-A"
+        
+        var id: String { self.rawValue }
+    }
+    
     private let subscriptionsCacheKey = "subscriptionsCacheKey"
     private let subscriptionsCacheDateKey = "subscriptionsCacheDateKey"
     private let cacheDuration: TimeInterval = 300 // 5 minutes
@@ -31,15 +41,7 @@ class SubscriptionsViewModel: ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: "countryCode") }
     }
 
-    func loadSubscriptions(token: String?, completion: @escaping ([YouTubeChannel]) -> Void) {
-        guard let token = token else {
-            DispatchQueue.main.async {
-                self.currentAlert = .apiError
-                completion([])
-            }
-            return
-        }
-
+    func loadImportedSubscriptions(completion: @escaping ([YouTubeChannel]) -> Void) {
         guard !apiKey.isEmpty else {
             DispatchQueue.main.async {
                 self.currentAlert = .apiError
@@ -48,57 +50,78 @@ class SubscriptionsViewModel: ObservableObject {
             return
         }
 
-        // Check cache
-        if let cachedSubs = loadCachedSubscriptions(), !cachedSubs.isEmpty, !isCacheExpired() {
+        let channelIds = SubscriptionManager.shared.subscriptionIds
+        guard !channelIds.isEmpty else {
             DispatchQueue.main.async {
-                self.subscriptions = cachedSubs
-                completion(cachedSubs)
+                self.subscriptions = []
+                completion([])
             }
             return
         }
-
-        let urlString = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=250&key=\(apiKey)"
-        guard let url = URL(string: urlString) else {
-            completion([])
-            return
-        }
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            self.handleSubscriptionResponse(data: data, response: response, error: error) { fetchedChannels in
-                DispatchQueue.main.async {
-                    self.subscriptions = fetchedChannels
-                    self.cacheSubscriptions(fetchedChannels)
-                    completion(fetchedChannels)
+        
+        // Batch IDs into groups of 50 (API limit)
+        let batches = channelIds.chunked(into: 50)
+        var allChannels: [YouTubeChannel] = []
+        let group = DispatchGroup()
+        
+        for batch in batches {
+            group.enter()
+            let idsString = batch.joined(separator: ",")
+            let urlString = "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=\(idsString)&key=\(apiKey)"
+            
+            guard let url = URL(string: urlString) else {
+                group.leave()
+                continue
+            }
+            
+            URLSession.shared.dataTask(with: url) { data, response, error in
+                defer { group.leave() }
+                guard let data = data else { return }
+                
+                do {
+                    let response = try JSONDecoder().decode(ChannelResponse.self, from: data)
+                    let channels = response.items.map { item in
+                        YouTubeChannel(
+                            id: item.id,
+                            title: item.snippet.title,
+                            description: item.snippet.description,
+                            thumbnailURL: item.snippet.thumbnails.default.url
+                        )
+                    }
+                    DispatchQueue.main.async {
+                        allChannels.append(contentsOf: channels)
+                    }
+                } catch {
+                    print("Error decoding channel batch: \(error)")
                 }
-            }
-        }.resume()
-    }
-
-    private func handleSubscriptionResponse(data: Data?, response: URLResponse?, error: Error?, completion: @escaping ([YouTubeChannel]) -> Void) {
-        guard let data = data else {
-            completion([])
-            return
+            }.resume()
         }
-
-        do {
-            let response = try JSONDecoder().decode(SubscriptionResponse.self, from: data)
-            let channels = response.items.map { item in
-                YouTubeChannel(
-                    id: item.snippet.resourceId.channelId,
-                    title: item.snippet.title,
-                    description: item.snippet.description,
-                    thumbnailURL: item.snippet.thumbnails.default.url
-                )
-            }
-            completion(channels)
-        } catch {
-            DispatchQueue.main.async {
-                self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
-            }
+        
+        group.notify(queue: .main) {
+            self.sortChannels(allChannels)
+            completion(self.subscriptions)
         }
     }
+    
+    private func sortChannels(_ channels: [YouTubeChannel]) {
+        switch sortOption {
+        case .az:
+            self.subscriptions = channels.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        case .za:
+            self.subscriptions = channels.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending }
+        }
+    }
+    
+    func updateSortOption(_ option: SortOption) {
+        sortOption = option
+        sortChannels(self.subscriptions)
+    }
+    
+    // Helper extension for chunking
+    // Note: In a real project, this might go in a Utility file
+    
+    // Old method signature kept or removed? Removed as per instruction to use stored IDs.
+    // The previous code had `loadSubscriptions(token: ...)` which is now obsolete.
     
     // MARK: - Caching
     private func cacheSubscriptions(_ channels: [YouTubeChannel]) {
@@ -123,6 +146,31 @@ class SubscriptionsViewModel: ObservableObject {
         }
     }
     
+    func deleteChannel(at offsets: IndexSet) {
+        // Find the IDs to remove based on the current subscriptions list
+        // Note: The subscriptions list in VM matches the order of loaded IDs if not sorted otherwise.
+        // However, if we filter or sort, indices might not match `SubscriptionManager.subscriptionIds`.
+        // Ideally, we remove by ID.
+        
+        // Map offsets to IDs
+        let idsToRemove = offsets.map { subscriptions[$0].id }
+        
+        // Remove from manager
+        var currentIds = SubscriptionManager.shared.subscriptionIds
+        currentIds.removeAll { idsToRemove.contains($0) }
+        SubscriptionManager.shared.subscriptionIds = currentIds
+        UserDefaults.standard.set(currentIds, forKey: "storedSubscriptionIds")
+        
+        // Update local list
+        subscriptions.remove(atOffsets: offsets)
+    }
+    
+    func addChannel(id: String) {
+        SubscriptionManager.shared.addSubscription(id: id)
+        // Reload to fetch the new channel's details
+        loadImportedSubscriptions { _ in }
+    }
+    
     private func isCacheExpired() -> Bool {
         let lastFetchTime = UserDefaults.standard.double(forKey: subscriptionsCacheDateKey)
         guard lastFetchTime > 0 else {
@@ -134,23 +182,20 @@ class SubscriptionsViewModel: ObservableObject {
 }
 
 // MARK: - Subscription Response Models
-struct SubscriptionResponse: Decodable {
-    let items: [SubscriptionItem]
+// MARK: - Channel Response Models
+struct ChannelResponse: Decodable {
+    let items: [ChannelResponseItem]
 }
 
-struct SubscriptionItem: Decodable {
-    let snippet: SubscriptionSnippet
+struct ChannelResponseItem: Decodable {
+    let id: String
+    let snippet: ChannelResponseSnippet
 }
 
-struct SubscriptionSnippet: Decodable {
+struct ChannelResponseSnippet: Decodable {
     let title: String
     let description: String
-    let resourceId: ResourceId
     let thumbnails: ThumbnailSet
-}
-
-struct ResourceId: Decodable {
-    let channelId: String
 }
 
 struct ThumbnailSet: Decodable {
@@ -159,4 +204,93 @@ struct ThumbnailSet: Decodable {
 
 struct Thumbnail: Decodable {
     let url: URL
+}
+
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0 ..< Swift.min($0 + size, count)])
+        }
+    }
+}
+
+// Moved SubscriptionManager here to ensure availability in build scope
+class SubscriptionManager: ObservableObject {
+    static let shared = SubscriptionManager()
+    
+    private let storedSubscriptionsKey = "storedSubscriptionIds"
+    
+    @Published var subscriptionIds: [String] = []
+    
+    init() {
+        loadSubscriptions()
+    }
+    
+    func parseCSV(url: URL) -> Bool {
+        // Secure access to the file
+        guard url.startAccessingSecurityScopedResource() else {
+            print("Failed to access security scoped resource")
+            return false
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+        
+        do {
+            let data = try String(contentsOf: url, encoding: .utf8)
+            let rows = data.components(separatedBy: .newlines)
+            
+            var newIds: [String] = []
+            
+            // Expected Header: Channel Id,Channel Url,Channel Title
+            
+            for (index, row) in rows.enumerated() {
+                if index == 0 { continue } // Skip header
+                let columns = row.components(separatedBy: ",")
+                if let channelId = columns.first, !channelId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    if channelId.count > 5 { 
+                        newIds.append(channelId)
+                    }
+                }
+            }
+            
+            if !newIds.isEmpty {
+                saveSubscriptions(newIds)
+                return true
+            }
+            return false
+            
+        } catch {
+            print("Failed to parse CSV: \(error)")
+            return false
+        }
+    }
+    
+    private func saveSubscriptions(_ ids: [String]) {
+        self.subscriptionIds = ids
+        UserDefaults.standard.set(ids, forKey: storedSubscriptionsKey)
+    }
+    
+    private func loadSubscriptions() {
+        if let storedIds = UserDefaults.standard.stringArray(forKey: storedSubscriptionsKey) {
+            self.subscriptionIds = storedIds
+        }
+    }
+    
+    func clearSubscriptions() {
+        self.subscriptionIds = []
+        UserDefaults.standard.removeObject(forKey: storedSubscriptionsKey)
+    }
+    
+    func addSubscription(id: String) {
+        let trimmedId = id.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedId.isEmpty, !subscriptionIds.contains(trimmedId) else { return }
+        var ids = subscriptionIds
+        ids.append(trimmedId)
+        saveSubscriptions(ids)
+    }
+    
+    func removeSubscriptions(at offsets: IndexSet) {
+        var ids = subscriptionIds
+        ids.remove(atOffsets: offsets)
+        saveSubscriptions(ids)
+    }
 }

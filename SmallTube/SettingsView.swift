@@ -15,30 +15,34 @@ struct SettingsView: View {
     
     @Environment(\.presentationMode) var presentationMode
     @StateObject var countryStore = CountryStore()
-    @EnvironmentObject var authManager: AuthManager
+    @ObservedObject var subscriptionManager = SubscriptionManager.shared
     
-    // State variable to control the display of the sign-out confirmation alert
-    @State private var showSignOutAlert = false
+    // State variable to control the display of the file importer
+    @State private var showFileImporter = false
 
     var body: some View {
         Form {
-            Section(header: Text("User Authentication")) {
-                if let token = authManager.userToken {
-                    if let name = authManager.userDisplayName {
-                        Text("Signed In: \(name)")
-                    } else {
-                        // If display name isn't fetched yet, show partial token or a placeholder
-                        Text("Signed In: \(token.prefix(10))...")
+            Section(header: Text("Import Subscriptions")) {
+                Text("To import your subscriptions:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("1. Go to takeout.google.com\n2. Deselect all, then select only 'YouTube'\n3. Click 'All YouTube data included' and select only 'subscriptions'\n4. Export and download the zip\n5. Import the 'subscriptions.csv' file here")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 4)
+                
+                Button("Import CSV File") {
+                    showFileImporter = true
+                }
+                
+                if !subscriptionManager.subscriptionIds.isEmpty {
+                    Text("Imported: \(subscriptionManager.subscriptionIds.count) channels")
+                        .foregroundColor(.green)
+                    
+                    Button("Clear All Subscriptions") {
+                        subscriptionManager.clearSubscriptions()
                     }
-                    // Update the Sign Out button to show the confirmation alert
-                    Button("Sign Out") {
-                        showSignOutAlert = true
-                    }
-                    .foregroundColor(.red) // Optional: Make the sign-out button red to indicate caution
-                } else {
-                    Button("Sign In with Google") {
-                        authManager.startSignInFlow()
-                    }
+                    .foregroundColor(.red)
                 }
             }
             
@@ -84,15 +88,20 @@ struct SettingsView: View {
             }
         }
         // Attach the alert to the Form or any parent view
-        .alert(isPresented: $showSignOutAlert) {
-            Alert(
-                title: Text("Confirm Sign Out"),
-                message: Text("Are you sure you want to sign out?"),
-                primaryButton: .destructive(Text("Yes")) {
-                    authManager.signOut()
-                },
-                secondaryButton: .cancel(Text("No"))
-            )
+        // Attach the file importer
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.commaSeparatedText, .plainText],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let selectedFile = try result.get().first else { return }
+                if subscriptionManager.parseCSV(url: selectedFile) {
+                    // Success handling if needed
+                }
+            } catch {
+                print("Error reading file: \(error.localizedDescription)")
+            }
         }
     }
 }

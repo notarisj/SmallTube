@@ -9,13 +9,11 @@ import SwiftUI
 
 @main
 struct SmallTubeApp: App {
-    @StateObject var authManager = AuthManager()
     @StateObject var appState = AppState()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(authManager)
                 .environmentObject(appState)
         }
     }

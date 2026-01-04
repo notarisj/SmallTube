@@ -12,7 +12,6 @@ struct TrendingView: View {
     
     // Access the horizontal size class from the environment
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
-    @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var appState: AppState
 
     var body: some View {

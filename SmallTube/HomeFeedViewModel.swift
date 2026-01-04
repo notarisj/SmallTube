@@ -33,15 +33,11 @@ class HomeFeedViewModel: ObservableObject {
 
     /// Load the home feed from user's subscribed channels
     /// - Parameter token: The OAuth access token of the logged-in user.
+    /// Load the home feed from user's subscribed channels
+    /// - Parameter token: The OAuth access token (Deprecated, now unused).
     func loadHomeFeed(token: String?) {
-        guard let token = token else {
-            print("No OAuth token provided. User is not signed in.")
-            DispatchQueue.main.async {
-                self.currentAlert = .apiError
-            }
-            return
-        }
-
+        // Token check removed as we use public API + imported IDs now
+        
         guard !apiKey.isEmpty else {
             print("API Key is missing.")
             DispatchQueue.main.async {
@@ -60,9 +56,9 @@ class HomeFeedViewModel: ObservableObject {
             return
         }
 
-        // Step 2: Fetch subscriptions
+        // Step 2: Fetch subscriptions (using imported CSV data)
         print("Fetching subscriptions...")
-        subscriptionsViewModel.loadSubscriptions(token: token) { subscriptions in
+        subscriptionsViewModel.loadImportedSubscriptions { subscriptions in
             guard !subscriptions.isEmpty else {
                 print("No subscriptions found.")
                 DispatchQueue.main.async {
@@ -83,35 +79,6 @@ class HomeFeedViewModel: ObservableObject {
                     self.cacheHomeFeedVideos(fetchedVideos)
                     self.currentAlert = fetchedVideos.isEmpty ? .noResults : nil
                 }
-            }
-        }
-    }
-
-    private func fetchSubscriptions(token: String, completion: @escaping ([String]) -> Void) {
-        guard let url = URL(string: "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=10") else {
-            print("Invalid URL for fetching subscriptions.")
-            completion([])
-            return
-        }
-
-        AuthManager.shared.makeAuthenticatedRequest(url: url) { data, response, error in
-            guard let data = self.handleResponse(data: data, response: response, error: error, onFailure: {
-                completion([])
-            }) else {
-                return
-            }
-
-            do {
-                let subResponse = try JSONDecoder().decode(SubscriptionListResponse.self, from: data)
-                let channelIds = subResponse.items.prefix(5).compactMap { $0.snippet.resourceId.channelId }
-                print("Extracted channel IDs: \(channelIds)")
-                completion(channelIds)
-            } catch {
-                print("Decoding subscriptions failed: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
-                }
-                completion([])
             }
         }
     }
@@ -344,14 +311,8 @@ class HomeFeedViewModel: ObservableObject {
 }
 
 // MARK: - Subscription Models
+// SubscriptionListResponse and related items removed as unused
 
-struct SubscriptionListResponse: Decodable {
-    let items: [SubscriptionItem]
-}
-
-struct SubscriptionResourceID: Decodable {
-    let channelId: String
-}
 
 struct ChannelContentResponse: Decodable {
     let items: [ChannelContentItem]
