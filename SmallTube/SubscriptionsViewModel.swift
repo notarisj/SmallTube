@@ -171,6 +171,87 @@ class SubscriptionsViewModel: ObservableObject {
         loadImportedSubscriptions { _ in }
     }
     
+    func searchYouTubeChannels(query: String, completion: @escaping ([YouTubeChannel]) -> Void) {
+        guard !query.isEmpty, !apiKey.isEmpty else {
+            completion([])
+            return
+        }
+        
+        // Encode query
+        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            completion([])
+            return
+        }
+        
+        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=\(encodedQuery)&maxResults=20&key=\(apiKey)"
+        guard let url = URL(string: urlString) else { return }
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data else {
+                completion([])
+                return
+            }
+            
+            do {
+                let response = try JSONDecoder().decode(SearchResponse.self, from: data)
+                let channels = response.items.map { item in
+                    YouTubeChannel(
+                        id: item.snippet.channelId ?? item.id.channelId ?? "",
+                        title: item.snippet.title,
+                        description: item.snippet.description,
+                        thumbnailURL: item.snippet.thumbnails.default.url
+                    )
+                }
+                // Filter out channels with empty IDs just in case
+                let validChannels = channels.filter { !$0.id.isEmpty }
+                
+                DispatchQueue.main.async {
+                    completion(validChannels)
+                }
+            } catch {
+                print("Search decode error: \(error)")
+                DispatchQueue.main.async {
+                    completion([])
+                }
+            }
+        }.resume()
+    }
+    
+    func validateAndAddChannel(id: String, completion: @escaping (Bool) -> Void) {
+        guard !id.isEmpty, !apiKey.isEmpty else {
+            completion(false)
+            return
+        }
+        
+        let urlString = "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=\(id)&key=\(apiKey)"
+        guard let url = URL(string: urlString) else {
+            completion(false)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data else {
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+            
+            do {
+                let response = try JSONDecoder().decode(ChannelResponse.self, from: data)
+                if let _ = response.items.first {
+                    // Valid channel
+                    DispatchQueue.main.async {
+                        self.addChannel(id: id)
+                        completion(true)
+                    }
+                } else {
+                    DispatchQueue.main.async { completion(false) }
+                }
+            } catch {
+                DispatchQueue.main.async { completion(false) }
+            }
+        }.resume()
+    }
+
     private func isCacheExpired() -> Bool {
         let lastFetchTime = UserDefaults.standard.double(forKey: subscriptionsCacheDateKey)
         guard lastFetchTime > 0 else {
@@ -193,6 +274,26 @@ struct ChannelResponseItem: Decodable {
 }
 
 struct ChannelResponseSnippet: Decodable {
+    let title: String
+    let description: String
+    let thumbnails: ThumbnailSet
+}
+
+struct SearchResponse: Decodable {
+    let items: [SearchItem]
+}
+
+struct SearchItem: Decodable {
+    let id: SearchItemId
+    let snippet: SearchSnippet
+}
+
+struct SearchItemId: Decodable {
+    let channelId: String?
+}
+
+struct SearchSnippet: Decodable {
+    let channelId: String? // Sometimes directly in snippet in some contexts, but mostly in id
     let title: String
     let description: String
     let thumbnails: ThumbnailSet

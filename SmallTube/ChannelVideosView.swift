@@ -14,25 +14,7 @@ struct ChannelVideosView: View {
 
     var body: some View {
         List {
-            // Channel Info as the first entry in the list
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 16) {
-                    // Thumbnail not available from just ID/Title immediately
-                    // AsyncImage(url: channel.thumbnailURL) ...
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(channelTitle)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .lineLimit(2)
-                            .truncationMode(.tail)
-                        
-                        // Description not available
-                        // Text(channel.description) ...
-                    }
-                }
-                .padding(.vertical, 8)
-            }
+
 
             // Videos list
             ForEach(viewModel.videos) { video in
