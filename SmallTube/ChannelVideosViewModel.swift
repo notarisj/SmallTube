@@ -10,6 +10,7 @@ import SwiftUI
 
 class ChannelVideosViewModel: ObservableObject {
     @Published var videos: [CachedYouTubeVideo] = []
+    @Published var channelDescription: String = ""
     @Published var currentAlert: AlertType?
 
     private let apiKey = UserDefaults.standard.string(forKey: "apiKey") ?? ""

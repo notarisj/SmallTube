@@ -11,35 +11,46 @@ struct ChannelVideosView: View {
     @StateObject var viewModel = ChannelVideosViewModel()
     var channelId: String
     var channelTitle: String
+    var channelDescription: String
 
     var body: some View {
         List {
+            Section {
+                // Channel Description Section
+                if !viewModel.channelDescription.isEmpty {
+                    DisclosureGroup("Description") {
+                        Text(viewModel.channelDescription)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                }
 
-
-            // Videos list
-            ForEach(viewModel.videos) { video in
-                NavigationLink(destination: VideoPlayerView(video: video)) {
-                    HStack {
-                        if let url = URL(string: video.thumbnailURL.absoluteString) {
-                            AsyncImage(url: url)
-                                .frame(width: 100, height: 60)
-                                .cornerRadius(8)
-                        }
-                        VStack(alignment: .leading) {
-                            Text(video.title)
-                                .font(.headline)
-                                .lineLimit(2)
-                            Text(video.description)
-                                .font(.subheadline)
-                                .lineLimit(3)
-                                .foregroundColor(.secondary)
+                // Videos list
+                ForEach(viewModel.videos) { video in
+                    NavigationLink(destination: VideoPlayerView(video: video)) {
+                        HStack {
+                            if let url = URL(string: video.thumbnailURL.absoluteString) {
+                                AsyncImage(url: url)
+                                    .frame(width: 100, height: 60)
+                                    .cornerRadius(8)
+                            }
+                            VStack(alignment: .leading) {
+                                Text(video.title)
+                                    .font(.headline)
+                                    .lineLimit(2)
+                                Text(video.description)
+                                    .font(.subheadline)
+                                    .lineLimit(3)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
             }
         }
         .onAppear {
-            let dummyChannel = YouTubeChannel(id: channelId, title: channelTitle, description: "", thumbnailURL: URL(string: "https://www.youtube.com")!)
+            viewModel.channelDescription = channelDescription
+            let dummyChannel = YouTubeChannel(id: channelId, title: channelTitle, description: channelDescription, thumbnailURL: URL(string: "https://www.youtube.com")!)
             viewModel.loadVideos(for: dummyChannel)
         }
         .navigationTitle(channelTitle)

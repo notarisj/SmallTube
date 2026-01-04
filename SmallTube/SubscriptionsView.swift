@@ -28,7 +28,7 @@ struct SubscriptionsView: View {
     var body: some View {
         List {
             ForEach(filteredSubscriptions) { channel in
-                NavigationLink(destination: ChannelVideosView(channelId: channel.id, channelTitle: channel.title)) {
+                NavigationLink(destination: ChannelVideosView(channelId: channel.id, channelTitle: channel.title, channelDescription: channel.description)) {
                     HStack {
                         AsyncImage(url: channel.thumbnailURL)
                             .frame(width: 50, height: 50)
