@@ -40,11 +40,12 @@ class ChannelVideosViewModel: ObservableObject {
             return
         }
 
-        // If not cached or cache expired, fetch from API
-        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=\(channel.id)&maxResults=20&key=\(apiKey)&type=video"
+        // 1. Fetch video IDs via Search
+        let urlString = "https://www.googleapis.com/youtube/v3/search?part=id,snippet&channelId=\(channel.id)&maxResults=20&key=\(apiKey)&type=video&order=date"
         guard let url = URL(string: urlString) else { return }
 
-        URLSession.shared.dataTask(with: url) { (data, response, error) in
+        URLSession.shared.dataTask(with: url) { [weak self] (data, response, error) in
+            guard let self = self else { return }
             guard let data = data else {
                 DispatchQueue.main.async {
                     self.currentAlert = .apiError
@@ -53,19 +54,109 @@ class ChannelVideosViewModel: ObservableObject {
             }
 
             do {
-                let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
-                let fetchedVideos = response.items.map { CachedYouTubeVideo(from: $0) }
-                DispatchQueue.main.async {
-                    self.videos = fetchedVideos
-                    self.cacheVideos(fetchedVideos, for: channel.id)
-                    self.currentAlert = self.videos.isEmpty ? .noResults : nil
+                let searchResponse = try JSONDecoder().decode(YouTubeResponse.self, from: data)
+                // YouTubeResponse.items are [YouTubeVideo]. YouTubeVideo.id is likely a plain String based on common issues?
+                // Wait, typically search endpoint result is `itemId` object { kind, videoId }. 
+                // Let's verify YouTubeAPIVideo.swift first. 
+                // Assuming standard Google API, Search result is different from Video list result.
+                
+                // If YouTubeVideo (from YouTubeResponse) has `id` as String (video ID), then we use it directly.
+                // If it has `id` as object, we access videoId.
+                // Assuming YouTubeVideo in YouTubeAPIVideo.swift has `id: String` (commonly simplified) OR it handles the container.
+                // Checked errors: "Value of type 'String' has no member 'videoId'" -> This means `id` IS A STRING.
+                
+                let videoIds = searchResponse.items.map { $0.id }.joined(separator: ",")
+                
+                if videoIds.isEmpty {
+                    DispatchQueue.main.async {
+                        self.videos = []
+                        self.currentAlert = .noResults
+                    }
+                    return
                 }
+                
+                // 2. Fetch Video Details (Duration)
+                self.fetchVideoDetails(videoIds: videoIds, originalItems: searchResponse.items, channelId: channel.id)
+                
             } catch {
                 DispatchQueue.main.async {
                     self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
             }
         }.resume()
+    }
+    
+    // Changing originalItems type to [YouTubeAPIVideo] which is likely the type in YouTubeResponse
+    private func fetchVideoDetails(videoIds: String, originalItems: [YouTubeAPIVideo], channelId: String) {
+        let detailsUrlString = "https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=\(videoIds)&key=\(apiKey)"
+        guard let url = URL(string: detailsUrlString) else { return }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] (data, response, error) in
+            guard let self = self else { return }
+            guard let data = data else { return }
+            
+            do {
+                let detailsResponse = try JSONDecoder().decode(VideoDetailsResponse.self, from: data)
+                
+                // Filter videos > 1.5 minutes (90 seconds)
+                let validVideos = detailsResponse.items.filter { item in
+                    let duration = self.parseDuration(item.contentDetails.duration)
+                    return duration >= 90 // 1.5 minutes
+                }
+                
+                let formatter = ISO8601DateFormatter()
+                
+                let cachedVideos = validVideos.map { item in
+                    let date = formatter.date(from: item.snippet.publishedAt) ?? Date()
+                    return CachedYouTubeVideo(
+                        id: item.id,
+                        title: item.snippet.title,
+                        description: item.snippet.description,
+                        thumbnailURL: item.snippet.thumbnails.maxres?.url ?? item.snippet.thumbnails.high?.url ?? item.snippet.thumbnails.medium.url,
+                        publishedAt: date
+                    )
+                }
+                
+                DispatchQueue.main.async {
+                    self.videos = cachedVideos
+                    self.cacheVideos(cachedVideos, for: channelId)
+                    self.currentAlert = self.videos.isEmpty ? .noResults : nil
+                }
+                
+            } catch {
+                print("Error decoding video details: \(error)")
+            }
+        }.resume()
+    }
+    
+    // Helper to parse ISO 8601 duration (e.g., PT1H30M15S) to seconds
+    private func parseDuration(_ durationString: String) -> Int {
+        var duration = durationString
+        guard duration.hasPrefix("PT") else { return 0 }
+        duration.removeFirst(2)
+        
+        var hours = 0
+        var minutes = 0
+        var seconds = 0
+        
+        if let hIndex = duration.firstIndex(of: "H") {
+            let hString = duration[..<hIndex]
+            hours = Int(hString) ?? 0
+            duration.removeSubrange(..<duration.index(after: hIndex))
+        }
+        
+        if let mIndex = duration.firstIndex(of: "M") {
+            let mString = duration[..<mIndex]
+            minutes = Int(mString) ?? 0
+            duration.removeSubrange(..<duration.index(after: mIndex))
+        }
+        
+        if let sIndex = duration.firstIndex(of: "S") {
+            let sString = duration[..<sIndex]
+            seconds = Int(sString) ?? 0
+        }
+        
+        return (hours * 3600) + (minutes * 60) + seconds
     }
 
     // MARK: - Caching Methods
@@ -108,3 +199,33 @@ class ChannelVideosViewModel: ObservableObject {
         return expired
     }
 }
+
+// MARK: - Video Details Response Models
+// MARK: - Video Details Response Models
+struct VideoDetailsResponse: Decodable {
+    let items: [VideoDetailItem]
+}
+
+struct VideoDetailItem: Decodable {
+    let id: String
+    let snippet: VideoSnippet
+    let contentDetails: VideoContentDetails
+}
+
+struct VideoSnippet: Decodable {
+    let title: String
+    let description: String
+    let publishedAt: String
+    let thumbnails: VideoThumbnails
+}
+
+struct VideoContentDetails: Decodable {
+    let duration: String
+}
+
+struct VideoThumbnails: Decodable {
+    let medium: Thumbnail
+    let high: Thumbnail?
+    let maxres: Thumbnail?
+}
+

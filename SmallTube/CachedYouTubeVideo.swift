@@ -14,6 +14,9 @@ struct CachedYouTubeVideo: Identifiable, Codable {
     let thumbnailURL: URL
     let publishedAt: Date
     
+}
+
+extension CachedYouTubeVideo {
     // Convert from the API model to the cached model
     init(from apiVideo: YouTubeAPIVideo) {
         self.id = apiVideo.id
