@@ -32,6 +32,7 @@
 		054F34BC2BF02F01008E9B18 /* YouTubeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */; };
 		054F34BE2BF02F0B008E9B18 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */; };
 		054F34C02BF02F13008E9B18 /* AsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054F34BF2BF02F13008E9B18 /* AsyncImage.swift */; };
+		05DBD32A2F4B8CF400F44EAC /* SmallTubeIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 05DBD3292F4B8CF400F44EAC /* SmallTubeIcon.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +63,7 @@
 		054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeViewModel.swift; sourceTree = "<group>"; };
 		054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
 		054F34BF2BF02F13008E9B18 /* AsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncImage.swift; sourceTree = "<group>"; };
+		05DBD3292F4B8CF400F44EAC /* SmallTubeIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = SmallTubeIcon.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +122,7 @@
 				054F34BB2BF02F01008E9B18 /* YouTubeViewModel.swift */,
 				054F34BD2BF02F0B008E9B18 /* VideoPlayerView.swift */,
 				054F34BF2BF02F13008E9B18 /* AsyncImage.swift */,
+				05DBD3292F4B8CF400F44EAC /* SmallTubeIcon.icon */,
 			);
 			path = SmallTube;
 			sourceTree = "<group>";
@@ -193,6 +196,7 @@
 				054F34B12BF02E9A008E9B18 /* Preview Assets.xcassets in Resources */,
 				0519A9592D06E1E100ABE3AE /* Countries.json in Resources */,
 				054F34AE2BF02E9A008E9B18 /* Assets.xcassets in Resources */,
+				05DBD32A2F4B8CF400F44EAC /* SmallTubeIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,7 +361,7 @@
 		054F34B52BF02E9A008E9B18 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = SmallTubeIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -387,7 +391,7 @@
 		054F34B62BF02E9A008E9B18 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = SmallTubeIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
