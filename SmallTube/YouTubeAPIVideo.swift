@@ -2,8 +2,6 @@
 //  YouTubeAPIVideo.swift
 //  SmallTube
 //
-//  Created by John Notaris on 12/10/24.
-//
 
 import Foundation
 
@@ -14,112 +12,88 @@ struct YouTubeAPIVideo: Decodable {
     let thumbnailURL: URL
     let publishedAt: Date
     let durationSeconds: Int?
-    
+
     enum APIKeys: String, CodingKey {
         case id, snippet, contentDetails
     }
-    
-    enum IDKeys: String, CodingKey {
-        case videoId
-    }
-    
-    enum SnippetKeys: String, CodingKey {
-        case title, description, thumbnails, publishedAt
-    }
-    
-    enum ContentDetailsKeys: String, CodingKey {
-        case duration
-    }
-    
-    enum ThumbnailKeys: String, CodingKey {
-        case defaultThumbnail = "default"
-    }
-    
-    enum DefaultThumbnailKeys: String, CodingKey {
-        case url
-    }
-    
+    enum IDKeys: String, CodingKey { case videoId }
+    enum SnippetKeys: String, CodingKey { case title, description, thumbnails, publishedAt }
+    enum ContentDetailsKeys: String, CodingKey { case duration }
+    enum ThumbnailKeys: String, CodingKey { case defaultThumbnail = "default" }
+    enum DefaultThumbnailKeys: String, CodingKey { case url }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: APIKeys.self)
-        
-        // Decode `id`
+
+        // `id` may be a plain String (Video list) or an object containing `videoId` (Search list)
         if let directId = try? container.decode(String.self, forKey: .id) {
             self.id = directId
         } else {
             let idContainer = try container.nestedContainer(keyedBy: IDKeys.self, forKey: .id)
             self.id = try idContainer.decode(String.self, forKey: .videoId)
         }
-        
-        // Decode `snippet`
+
         let snippetContainer = try container.nestedContainer(keyedBy: SnippetKeys.self, forKey: .snippet)
-        let rawTitle = try snippetContainer.decode(String.self, forKey: .title)
-        self.title = rawTitle.stringByDecodingHTMLEntities
+        self.title = (try snippetContainer.decode(String.self, forKey: .title)).decodingHTMLEntities()
         self.description = try snippetContainer.decodeIfPresent(String.self, forKey: .description) ?? ""
-        
-        // Decode `thumbnails`
+
         let publishedAtString = try snippetContainer.decode(String.self, forKey: .publishedAt)
-        let formatter = ISO8601DateFormatter()
-        if let date = formatter.date(from: publishedAtString) {
-            self.publishedAt = date
-        } else {
-            // If parsing fails, use current date as fallback.
-            self.publishedAt = Date()
-        }
-        
-        // Decode thumbnails
+        self.publishedAt = ISO8601DateFormatter().date(from: publishedAtString) ?? Date()
+
         let thumbnailContainer = try snippetContainer.nestedContainer(keyedBy: ThumbnailKeys.self, forKey: .thumbnails)
-        let defaultThumbnailContainer = try thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail)
-        self.thumbnailURL = try defaultThumbnailContainer.decode(URL.self, forKey: .url)
-        
-        // Decode `contentDetails` (optional, as search results don't have it unless requested or from videos endpoint)
-        if let contentDetailsContainer = try? container.nestedContainer(keyedBy: ContentDetailsKeys.self, forKey: .contentDetails),
-           let durationString = try? contentDetailsContainer.decode(String.self, forKey: .duration) {
+        let defaultContainer   = try thumbnailContainer.nestedContainer(keyedBy: DefaultThumbnailKeys.self, forKey: .defaultThumbnail)
+        self.thumbnailURL = try defaultContainer.decode(URL.self, forKey: .url)
+
+        if let cdContainer = try? container.nestedContainer(keyedBy: ContentDetailsKeys.self, forKey: .contentDetails),
+           let durationString = try? cdContainer.decode(String.self, forKey: .duration) {
             self.durationSeconds = YouTubeAPIVideo.parseDuration(durationString)
         } else {
             self.durationSeconds = nil
         }
     }
-    
-    // Helper to parse ISO 8601 duration (e.g., PT1H30M15S) to seconds
-    private static func parseDuration(_ durationString: String) -> Int {
-        var duration = durationString
-        guard duration.hasPrefix("PT") else { return 0 }
-        duration.removeFirst(2)
-        
-        var hours = 0
-        var minutes = 0
-        var seconds = 0
-        
-        if let hIndex = duration.firstIndex(of: "H") {
-            let hString = duration[..<hIndex]
-            hours = Int(hString) ?? 0
-            duration.removeSubrange(..<duration.index(after: hIndex))
+
+    // MARK: - ISO 8601 Duration Parser  e.g. "PT1H30M15S" → seconds
+
+    private static func parseDuration(_ string: String) -> Int {
+        guard string.hasPrefix("PT") else { return 0 }
+        var s = string.dropFirst(2)   // remove "PT"
+        var hours = 0, minutes = 0, seconds = 0
+
+        if let hIdx = s.firstIndex(of: "H") {
+            hours = Int(s[..<hIdx]) ?? 0
+            s = s[s.index(after: hIdx)...]
         }
-        
-        if let mIndex = duration.firstIndex(of: "M") {
-            let mString = duration[..<mIndex]
-            minutes = Int(mString) ?? 0
-            duration.removeSubrange(..<duration.index(after: mIndex))
+        if let mIdx = s.firstIndex(of: "M") {
+            minutes = Int(s[..<mIdx]) ?? 0
+            s = s[s.index(after: mIdx)...]
         }
-        
-        if let sIndex = duration.firstIndex(of: "S") {
-            let sString = duration[..<sIndex]
-            seconds = Int(sString) ?? 0
+        if let sIdx = s.firstIndex(of: "S") {
+            seconds = Int(s[..<sIdx]) ?? 0
         }
-        
-        return (hours * 3600) + (minutes * 60) + seconds
+        return hours * 3600 + minutes * 60 + seconds
     }
 }
 
+// MARK: - Lightweight HTML entity decoder
+// Replaces the NSAttributedString-based approach which allocates a full HTML parser
+// for every video title. YouTube only emits a small, well-known set of entities.
+
 extension String {
-    var stringByDecodingHTMLEntities: String {
-        guard let data = self.data(using: .utf8) else { return self }
-        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
-            .documentType: NSAttributedString.DocumentType.html,
-            .characterEncoding: String.Encoding.utf8.rawValue
+    /// Decodes the five standard HTML entities plus the numeric apostrophe YouTube uses.
+    func decodingHTMLEntities() -> String {
+        let table: [(String, String)] = [
+            ("&amp;",  "&"),
+            ("&lt;",   "<"),
+            ("&gt;",   ">"),
+            ("&quot;", "\""),
+            ("&#39;",  "'"),
+            ("&apos;", "'"),
         ]
-        guard let attributedString = try? NSAttributedString(data: data, options: options, documentAttributes: nil) else { return self }
-        return attributedString.string
+        var result = self
+        for (entity, char) in table {
+            result = result.replacingOccurrences(of: entity, with: char)
+        }
+        return result
     }
 }
 

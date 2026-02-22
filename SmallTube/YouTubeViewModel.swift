@@ -2,28 +2,21 @@
 //  YouTubeViewModel.swift
 //  SmallTube
 //
-//  Created by John Notaris on 12/12/24.
-//
 
 import Foundation
 import SwiftUI
+import OSLog
 
 enum AlertType: Identifiable {
     case noResults, apiError, emptyQuery, quotaExceeded, credsMismatch, unknownError
     var id: Int {
         switch self {
-        case .noResults:
-            return 0
-        case .apiError:
-            return 1
-        case .emptyQuery:
-            return 2
-        case .quotaExceeded:
-            return 3
-        case .credsMismatch:
-            return 4
-        case .unknownError:
-            return 5
+        case .noResults:    return 0
+        case .apiError:     return 1
+        case .emptyQuery:   return 2
+        case .quotaExceeded:return 3
+        case .credsMismatch:return 4
+        case .unknownError: return 5
         }
     }
 }
@@ -31,117 +24,75 @@ enum AlertType: Identifiable {
 class YouTubeViewModel: ObservableObject {
     @Published var videos = [CachedYouTubeVideo]()
     @Published var currentAlert: AlertType?
-    
-    // MARK: - Caching properties
-    private let trendingCacheKey = "trendingVideosCacheKey"
-    private let trendingCacheDateKey = "trendingVideosCacheDateKey"
-    private let cacheDuration: TimeInterval = 300 // 5 minutes in seconds
-    
+
+    private let trendingCache = CacheService<[CachedYouTubeVideo]>(filename: "trending.json", ttl: 300)
+    private let logger = AppLogger.network
+
+    // MARK: - UserDefaults (user preferences only)
+
     var lastSearches: [String] {
-        get {
-            return UserDefaults.standard.array(forKey: "lastSearches") as? [String] ?? []
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "lastSearches")
-        }
+        get { UserDefaults.standard.array(forKey: "lastSearches") as? [String] ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: "lastSearches") }
     }
-    
+
     var apiKey: String {
         get { UserDefaults.standard.string(forKey: "apiKey") ?? "" }
         set { UserDefaults.standard.set(newValue, forKey: "apiKey") }
     }
-    
+
     var resultsCount: String {
         get { UserDefaults.standard.string(forKey: "resultsCount") ?? "10" }
         set { UserDefaults.standard.set(newValue, forKey: "resultsCount") }
     }
-    
-    // Retrieve country code
+
     var countryCode: String {
         get { UserDefaults.standard.string(forKey: "countryCode") ?? "US" }
         set { UserDefaults.standard.set(newValue, forKey: "countryCode") }
     }
-    
+
+    // MARK: - Search
+
     func searchVideos(query: String) {
         guard !query.isEmpty else {
-            DispatchQueue.main.async {
-                self.currentAlert = .emptyQuery
-            }
+            DispatchQueue.main.async { self.currentAlert = .emptyQuery }
             return
         }
-        // Save the search query
+
+        // Persist query (deduped, max 10)
         var searches = lastSearches
         if !searches.contains(query) {
             searches.insert(query, at: 0)
-            if searches.count > 10 {
-                searches = Array(searches.prefix(10))
-            }
-            lastSearches = searches
+            lastSearches = Array(searches.prefix(10))
         }
+
         guard !apiKey.isEmpty else {
-            DispatchQueue.main.async {
-                self.currentAlert = .apiError
-            }
+            logger.warning("searchVideos aborted: API key missing")
+            DispatchQueue.main.async { self.currentAlert = .apiError }
             return
         }
-        
-        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=long&q=\(encodedQuery)&maxResults=\(resultsCount)&key=\(apiKey)&type=video"
-        guard let url = URL(string: urlString) else { return }
-        
-        URLSession.shared.dataTask(with: url) { (data, response, error) in
-            guard let data = data else { return }
-            
+
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let urlString = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=long&q=\(encoded)&maxResults=\(resultsCount)&key=\(apiKey)"
+        guard let url = URL(string: urlString) else {
+            logger.error("Invalid search URL for query: \(query, privacy: .private)")
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            guard let self else { return }
+            if let error {
+                self.logger.error("Search network error: \(error.localizedDescription, privacy: .public)")
+            }
+            guard let data else { return }
             do {
                 let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
-                let cachedVideos = response.items.map { CachedYouTubeVideo(from: $0) }
+                let cached = response.items.map { CachedYouTubeVideo(from: $0) }
                 DispatchQueue.main.async {
-                    self.videos = cachedVideos
-                    self.currentAlert = self.videos.isEmpty ? .noResults : nil
+                    self.videos = cached
+                    self.currentAlert = cached.isEmpty ? .noResults : nil
                 }
             } catch {
-                DispatchQueue.main.async {
-                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
-                }
-            }
-        }.resume()
-    }
-    
-    func loadTrendingVideos() {
-        guard !apiKey.isEmpty else {
-            DispatchQueue.main.async {
-                self.currentAlert = .apiError
-            }
-            return
-        }
-        
-        // Check cache first
-        if let cachedVideos = loadCachedTrendingVideos(), !cachedVideos.isEmpty, !isCacheExpired() {
-            // If we have cached results and they're still valid
-            DispatchQueue.main.async {
-                self.videos = cachedVideos
-                self.currentAlert = self.videos.isEmpty ? .noResults : nil
-            }
-            return
-        }
-        
-        // If cache is expired or doesn't exist, fetch again
-        let urlString = "https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=\(resultsCount)&regionCode=\(countryCode)&key=\(apiKey)"
-        
-        guard let url = URL(string: urlString) else { return }
-        URLSession.shared.dataTask(with: url) { (data, response, error) in
-            guard let data = data else { return }
-            do {
-                let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
-                let cachedVideos = response.items.map { CachedYouTubeVideo(from: $0) }
-                DispatchQueue.main.async {
-                    self.videos = cachedVideos
-                    self.currentAlert = self.videos.isEmpty ? .noResults : nil
-                    
-                    // Update the cache with new results
-                    self.cacheTrendingVideos(self.videos)
-                }
-            } catch {
+                self.logger.error("Search decode error: \(error.localizedDescription, privacy: .public)")
                 DispatchQueue.main.async {
                     self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
                 }
@@ -149,46 +100,60 @@ class YouTubeViewModel: ObservableObject {
         }.resume()
     }
 
-    func searchSuggestions(query: String) -> [String] {
-        // For now, we just return last searches. You could filter by query if desired.
-        return lastSearches
+    // MARK: - Trending
+
+    func loadTrendingVideos() {
+        guard !apiKey.isEmpty else {
+            logger.warning("loadTrendingVideos aborted: API key missing")
+            DispatchQueue.main.async { self.currentAlert = .apiError }
+            return
+        }
+
+        if let cached = trendingCache.load(), !cached.isEmpty, !trendingCache.isExpired {
+            logger.debug("Returning \(cached.count) trending videos from cache")
+            DispatchQueue.main.async {
+                self.videos = cached
+                self.currentAlert = cached.isEmpty ? .noResults : nil
+            }
+            return
+        }
+
+        let urlString = "https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=\(resultsCount)&regionCode=\(countryCode)&key=\(apiKey)"
+        guard let url = URL(string: urlString) else {
+            logger.error("Invalid trending URL")
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            guard let self else { return }
+            if let error {
+                self.logger.error("Trending network error: \(error.localizedDescription, privacy: .public)")
+            }
+            guard let data else { return }
+            do {
+                let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
+                let cached = response.items.map { CachedYouTubeVideo(from: $0) }
+                DispatchQueue.main.async {
+                    self.videos = cached
+                    self.currentAlert = cached.isEmpty ? .noResults : nil
+                    self.trendingCache.save(cached)
+                }
+            } catch {
+                self.logger.error("Trending decode error: \(error.localizedDescription, privacy: .public)")
+                DispatchQueue.main.async {
+                    self.currentAlert = ErrorHandler.mapErrorToAlertType(data: data, error: error)
+                }
+            }
+        }.resume()
     }
-    
+
+    // MARK: - Search History
+
+    func searchSuggestions(query: String) -> [String] { lastSearches }
+
     func deleteSearches(at offsets: IndexSet) {
         var searches = lastSearches
         searches.remove(atOffsets: offsets)
         lastSearches = searches
-    }
-    
-    // MARK: - Caching Methods
-    
-    private func cacheTrendingVideos(_ videos: [CachedYouTubeVideo]) {
-        do {
-            let data = try JSONEncoder().encode(videos)
-            UserDefaults.standard.set(data, forKey: trendingCacheKey)
-            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: trendingCacheDateKey)
-        } catch {
-            print("Failed to cache trending videos: \(error)")
-        }
-    }
-
-    private func loadCachedTrendingVideos() -> [CachedYouTubeVideo]? {
-        guard let data = UserDefaults.standard.data(forKey: trendingCacheKey) else { return nil }
-        do {
-            let videos = try JSONDecoder().decode([CachedYouTubeVideo].self, from: data)
-            return videos
-        } catch {
-            print("Failed to decode cached videos: \(error)")
-            return nil
-        }
-    }
-
-    private func isCacheExpired() -> Bool {
-        let lastFetchTime = UserDefaults.standard.double(forKey: trendingCacheDateKey)
-        guard lastFetchTime > 0 else {
-            return true // no cache date found
-        }
-        let now = Date().timeIntervalSince1970
-        return now - lastFetchTime > cacheDuration
     }
 }

@@ -6,14 +6,14 @@
 //
 
 import SwiftUI
-import CommonCrypto
+import OSLog
 
 struct SettingsView: View {
     @AppStorage("apiKey") var apiKey: String = ""
     @AppStorage("resultsCount") var resultsCount: Int = 10
     @AppStorage("countryCode") var countryCode: String = "US"
     
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @StateObject var countryStore = CountryStore()
     @ObservedObject var subscriptionManager = SubscriptionManager.shared
     
@@ -173,9 +173,7 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Done") {
-                    presentationMode.wrappedValue.dismiss()
-                }
+                Button("Done") { dismiss() }
             }
         }
         .fileImporter(
@@ -183,11 +181,12 @@ struct SettingsView: View {
             allowedContentTypes: [.commaSeparatedText, .plainText],
             allowsMultipleSelection: false
         ) { result in
-            do {
-                guard let selectedFile = try result.get().first else { return }
+            switch result {
+            case .success(let urls):
+                guard let selectedFile = urls.first else { return }
                 _ = subscriptionManager.parseCSV(url: selectedFile)
-            } catch {
-                print("Error reading file: \(error.localizedDescription)")
+            case .failure(let error):
+                AppLogger.ui.error("File importer error: \(error.localizedDescription, privacy: .public)")
             }
         }
         .sheet(isPresented: $showImportInstructions) {
@@ -281,10 +280,10 @@ struct InstructionStep: Identifiable {
 struct InstructionSheet: View {
     let title: String
     let steps: [InstructionStep]
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 ForEach(steps) { step in
                     HStack(alignment: .top, spacing: 15) {
@@ -313,9 +312,7 @@ struct InstructionSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
         }

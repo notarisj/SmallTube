@@ -2,46 +2,46 @@
 //  VideoPlayerView.swift
 //  SmallTube
 //
-//  Created by John Notaris on 11/5/24.
-//
 
 import Foundation
 import SwiftUI
 import WebKit
 
 struct VideoPlayerView: View {
-    var video: CachedYouTubeVideo // Change from YouTubeVideo to CachedYouTubeVideo
+    var video: CachedYouTubeVideo
     @State private var isLoading = true
-    
+
     var body: some View {
-        VStack(spacing: 0) {
-            // 1. Video Player Container (16:9 Aspect Ratio)
-            ZStack {
-                WebView(url: URL(string: "https://www.youtube.com/embed/\(video.id)")!, isLoading: $isLoading)
-                if isLoading {
-                    Color.black
-                    VStack {
-                        ProgressView("Loading...")
+        GeometryReader { geo in
+            VStack(spacing: 0) {
+                // 16:9 video container
+                ZStack {
+                    if let embedURL = URL(string: "https://www.youtube.com/embed/\(video.id)") {
+                        WebView(url: embedURL, isLoading: $isLoading)
+                    }
+                    if isLoading {
+                        Color.black
+                        ProgressView("Loading…")
                             .progressViewStyle(CircularProgressViewStyle(tint: .gray))
                             .scaleEffect(2)
                     }
                 }
-            }
-            .frame(height: UIScreen.main.bounds.width * 9 / 16) // Force 16:9 height based on screen width
-            .background(Color.black)
-            
-            // 2. Scrollable Description Area
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(video.title)
-                        .font(.headline)
-                        .padding(.top)
-                    
-                    Text(video.description)
-                        .font(.body)
-                        .foregroundColor(.primary)
+                .frame(height: geo.size.width * 9 / 16)
+                .background(Color.black)
+
+                // Scrollable description
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(video.title)
+                            .font(.headline)
+                            .padding(.top)
+
+                        Text(video.description)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                    }
+                    .padding()
                 }
-                .padding()
             }
         }
         .navigationTitle(video.title)
@@ -52,21 +52,19 @@ struct VideoPlayerView: View {
 struct WebView: UIViewRepresentable {
     let url: URL
     @Binding var isLoading: Bool
-    
+
     func makeUIView(context: Context) -> WKWebView {
-        // Configure WKWebView for YouTube embed playback
-        let configuration = WKWebViewConfiguration()
-        configuration.allowsInlineMediaPlayback = true
-        configuration.mediaTypesRequiringUserActionForPlayback = []
-        
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let config = WKWebViewConfiguration()
+        config.allowsInlineMediaPlayback = true
+        config.mediaTypesRequiringUserActionForPlayback = []
+
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
         webView.scrollView.isScrollEnabled = false
         webView.backgroundColor = .black
         webView.isOpaque = false
-        
-        let embedUrl = "https://www.youtube.com/embed/\(url.lastPathComponent)?playsinline=1&autoplay=1&rel=0&modestbranding=1&origin=http://localhost"
-        
+
+        let embedPath = "https://www.youtube.com/embed/\(url.lastPathComponent)?playsinline=1&autoplay=1&rel=0&modestbranding=1&origin=http://localhost"
         let html = """
         <!DOCTYPE html>
         <html>
@@ -78,33 +76,27 @@ struct WebView: UIViewRepresentable {
             </style>
         </head>
         <body>
-            <iframe src="\(embedUrl)" width="100%" height="100%" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <iframe src="\(embedPath)" width="100%" height="100%" frameborder="0"
+                allow="autoplay; encrypted-media; fullscreen" allowfullscreen
+                referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </body>
         </html>
         """
-        
         webView.loadHTMLString(html, baseURL: URL(string: "http://localhost"))
-        
         return webView
     }
-    
+
     func updateUIView(_ uiView: WKWebView, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, WKNavigationDelegate {
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, WKNavigationDelegate {
         var parent: WebView
-        
-        init(_ parent: WebView) {
-            self.parent = parent
-        }
-        
+        init(_ parent: WebView) { self.parent = parent }
+
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             parent.isLoading = true
         }
-        
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             parent.isLoading = false
         }

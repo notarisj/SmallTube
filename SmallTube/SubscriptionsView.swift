@@ -30,9 +30,18 @@ struct SubscriptionsView: View {
             ForEach(filteredSubscriptions) { channel in
                 NavigationLink(destination: ChannelVideosView(channelId: channel.id, channelTitle: channel.title, channelDescription: channel.description)) {
                     HStack {
-                        AsyncImage(url: channel.thumbnailURL)
-                            .frame(width: 50, height: 50)
-                            .clipShape(Circle())
+                        AsyncImage(url: channel.thumbnailURL) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                            case .failure:
+                                Image(systemName: "person.crop.circle").resizable()
+                            default:
+                                Color.secondary.opacity(0.2)
+                            }
+                        }
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
                         VStack(alignment: .leading) {
                             Text(channel.title)
                                 .font(.headline)
@@ -106,8 +115,10 @@ struct AddChannelView: View {
     @State private var manualId: String = ""
     @State private var isAddingManual = false
     
+    @State private var showValidationError = false
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 if isLoading {
                     HStack {
@@ -136,9 +147,18 @@ struct AddChannelView: View {
                                 }
                             }) {
                                 HStack {
-                                    AsyncImage(url: channel.thumbnailURL)
-                                        .frame(width: 40, height: 40)
-                                        .clipShape(Circle())
+                                    AsyncImage(url: channel.thumbnailURL) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            image.resizable().scaledToFill()
+                                        case .failure:
+                                            Image(systemName: "person.crop.circle").resizable()
+                                        default:
+                                            Color.secondary.opacity(0.2)
+                                        }
+                                    }
+                                    .frame(width: 40, height: 40)
+                                    .clipShape(Circle())
                                     
                                     VStack(alignment: .leading) {
                                         Text(channel.title)
@@ -221,20 +241,13 @@ struct AddChannelView: View {
         guard !manualId.isEmpty else { return }
         isAddingManual = true
         errorMessage = nil
-        
+
         viewModel.validateAndAddChannel(id: manualId) { success in
             isAddingManual = false
             if success {
                 isPresented = false
             } else {
-                // Determine if we should show this as a global error or local
-                // For simplicity, using the list error message, though simpler would be alert.
-                // But user wants "nicer", so maybe an alert is better conform to standard.
-                // Let's keep it simple for now, maybe add a shake animation later if needed.
-                // But the requested UI improvement was mostly about layout.
-                // I'll show it in the error text area for now as I removed the alert logic.
-                // Actually an Alert for error is better.
-                // Re-adding a small alert state just for this view would be cleanest.
+                errorMessage = "Channel not found. Please check the ID and try again."
             }
         }
     }

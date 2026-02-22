@@ -2,30 +2,24 @@
 //  ErrorHandler.swift
 //  SmallTube
 //
-//  Created by John Notaris on 12/11/24.
-//
 
 import Foundation
+import OSLog
 
 struct ErrorHandler {
     static func mapErrorToAlertType(data: Data?, error: Error) -> AlertType {
-        // Attempt to decode the ErrorResponse
-        if let data = data,
+        let logger = AppLogger.network
+
+        if let data,
            let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-            print("API error code: \(errorResponse.error.code)")
-            print("Message: \(errorResponse.error.message)")
-            
+            logger.error("API error \(errorResponse.error.code): \(errorResponse.error.message, privacy: .public)")
             switch errorResponse.error.code {
-            case 403:
-                return .quotaExceeded
-            case 400:
-                return .credsMismatch
-            default:
-                return .apiError
+            case 403:  return .quotaExceeded
+            case 400:  return .credsMismatch
+            default:   return .apiError
             }
         } else {
-            // If decoding fails or data is nil, return unknownError
-            print("Unknown error: \(error.localizedDescription)")
+            logger.error("Unknown API error: \(error.localizedDescription, privacy: .public)")
             return .unknownError
         }
     }

@@ -2,57 +2,51 @@
 //  TrendingView.swift
 //  SmallTube
 //
-//  Created by John Notaris on 12/9/24.
-//
 
 import SwiftUI
 
 struct TrendingView: View {
     @StateObject var viewModel = YouTubeViewModel()
-    
-    // Access the horizontal size class from the environment
-    @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @EnvironmentObject var appState: AppState
 
     var body: some View {
         List(viewModel.videos) { video in
             NavigationLink(destination: VideoPlayerView(video: video)) {
-                HStack {
-                    if let url = URL(string: video.thumbnailURL.absoluteString) {
-                        AsyncImage(url: url)
+                HStack(spacing: 12) {
+                    AsyncImage(url: video.thumbnailURL) { phase in
+                        switch phase {
+                        case .success(let image): image.resizable().scaledToFill()
+                        case .failure: Image(systemName: "play.rectangle").resizable().scaledToFit()
+                        default: Color.secondary.opacity(0.2)
+                        }
                     }
-                    
-                    VStack(alignment: .leading) {
+                    .frame(width: 100, height: 60)
+                    .cornerRadius(8)
+                    .clipped()
+
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(video.title)
                             .font(.headline)
                             .lineLimit(2)
-                            .truncationMode(.tail)
                         Text(video.description)
                             .font(.subheadline)
-                            .lineLimit(3)
-                            .truncationMode(.tail)
+                            .lineLimit(2)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
         }
-        .onAppear {
-            viewModel.loadTrendingVideos()
-        }
+        .onAppear { viewModel.loadTrendingVideos() }
         .navigationTitle("Trending")
         .toolbar {
-            // Show toolbar items only when horizontal size class is compact (e.g., iPhone)
             if UIDevice.current.userInterfaceIdiom != .pad {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        appState.showSettings = true
-                    }) {
+                    Button { appState.showSettings = true } label: {
                         Image(systemName: "gear")
                     }
                 }
             }
         }
-        .alert(item: $viewModel.currentAlert) { alertType in
-            AlertBuilder.buildAlert(for: alertType)
-        }
+        .alert(item: $viewModel.currentAlert) { AlertBuilder.buildAlert(for: $0) }
     }
 }
