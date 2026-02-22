@@ -10,44 +10,94 @@ import WebKit
 struct VideoPlayerView: View {
     var video: CachedYouTubeVideo
     @State private var isLoading = true
+    @State private var isDescriptionExpanded = false
+
+    // Formatted publish date
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: video.publishedAt)
+    }
 
     var body: some View {
-        GeometryReader { geo in
-            VStack(spacing: 0) {
-                // 16:9 video container
+        VStack(spacing: 0) {
+
+            // ── 16:9 Player (fixed) ────────────────────────────────────────
+            GeometryReader { geo in
                 ZStack {
+                    Color.black
+
                     if let embedURL = URL(string: "https://www.youtube.com/embed/\(video.id)") {
                         WebView(url: embedURL, isLoading: $isLoading)
                     }
+
                     if isLoading {
                         Color.black
-                        ProgressView("Loading…")
-                            .progressViewStyle(CircularProgressViewStyle(tint: .gray))
-                            .scaleEffect(2)
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.5)
                     }
                 }
-                .frame(height: geo.size.width * 9 / 16)
-                .background(Color.black)
-
-                // Scrollable description
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text(video.title)
-                            .font(.headline)
-                            .padding(.top)
-
-                        Text(video.description)
-                            .font(.body)
-                            .foregroundColor(.primary)
-                    }
-                    .padding()
-                }
+                .frame(width: geo.size.width, height: geo.size.width * 9 / 16)
             }
+            .aspectRatio(16 / 9, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+
+            // ── Scrollable info card ───────────────────────────────────────
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+
+                    // Title
+                    Text(video.title)
+                        .font(.system(.title3, design: .default, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    // Publish date
+                    Text(formattedDate)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+
+                    // Description with expand/collapse
+                    if !video.description.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(video.description)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(isDescriptionExpanded ? nil : 3)
+                                .animation(.easeInOut(duration: 0.25), value: isDescriptionExpanded)
+
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    isDescriptionExpanded.toggle()
+                                }
+                            } label: {
+                                Text(isDescriptionExpanded ? "Less" : "More")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(.tint)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+            }
+            .background(Color(.systemBackground))
         }
+        .background(Color(.systemGroupedBackground))
         .navigationTitle(video.title)
         .navigationBarTitleDisplayMode(.inline)
     }
 }
+
+// ── WebView ────────────────────────────────────────────────────────────────
 
 struct WebView: UIViewRepresentable {
     let url: URL
