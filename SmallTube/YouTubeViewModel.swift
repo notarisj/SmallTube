@@ -30,9 +30,12 @@ class YouTubeViewModel: ObservableObject {
 
     // MARK: - UserDefaults (user preferences only)
 
-    var lastSearches: [String] {
-        get { UserDefaults.standard.array(forKey: "lastSearches") as? [String] ?? [] }
-        set { UserDefaults.standard.set(newValue, forKey: "lastSearches") }
+    @Published var lastSearches: [String] = [] {
+        didSet { UserDefaults.standard.set(lastSearches, forKey: "lastSearches") }
+    }
+
+    init() {
+        self.lastSearches = UserDefaults.standard.array(forKey: "lastSearches") as? [String] ?? []
     }
 
     var apiKey: String {
@@ -58,11 +61,16 @@ class YouTubeViewModel: ObservableObject {
             return
         }
 
-        // Persist query (deduped, max 10)
+        DispatchQueue.main.async { self.videos = [] }
+
+        // Persist query (deduplicate and move to top, max 10)
         var searches = lastSearches
-        if !searches.contains(query) {
-            searches.insert(query, at: 0)
-            lastSearches = Array(searches.prefix(10))
+        searches.removeAll { $0.localizedCaseInsensitiveCompare(query) == .orderedSame }
+        searches.insert(query, at: 0)
+        let updated = Array(searches.prefix(10))
+        
+        DispatchQueue.main.async {
+            self.lastSearches = updated
         }
 
         guard !apiKey.isEmpty else {
@@ -149,11 +157,24 @@ class YouTubeViewModel: ObservableObject {
 
     // MARK: - Search History
 
-    func searchSuggestions(query: String) -> [String] { lastSearches }
+    func searchSuggestions(query: String) -> [String] {
+        guard !query.isEmpty else { return lastSearches }
+        return lastSearches.filter { $0.localizedCaseInsensitiveContains(query) }
+    }
 
     func deleteSearches(at offsets: IndexSet) {
         var searches = lastSearches
         searches.remove(atOffsets: offsets)
         lastSearches = searches
+    }
+
+    func removeSearch(_ query: String) {
+        var searches = lastSearches
+        searches.removeAll { $0 == query }
+        lastSearches = searches
+    }
+
+    func clearAllSearches() {
+        lastSearches = []
     }
 }

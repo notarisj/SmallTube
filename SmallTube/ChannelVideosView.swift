@@ -12,6 +12,7 @@ struct ChannelVideosView: View {
     var channelId: String
     var channelTitle: String
     var channelDescription: String
+    var channelThumbnailURL: URL
 
     var body: some View {
         List {
@@ -50,7 +51,7 @@ struct ChannelVideosView: View {
         }
         .onAppear {
             viewModel.channelDescription = channelDescription
-            let dummyChannel = YouTubeChannel(id: channelId, title: channelTitle, description: channelDescription, thumbnailURL: URL(string: "https://www.youtube.com")!)
+            let dummyChannel = YouTubeChannel(id: channelId, title: channelTitle, description: channelDescription, thumbnailURL: channelThumbnailURL)
             viewModel.loadVideos(for: dummyChannel)
         }
         .navigationTitle(channelTitle)
