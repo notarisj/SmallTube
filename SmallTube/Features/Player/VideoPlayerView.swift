@@ -48,42 +48,49 @@ struct VideoPlayerView: View {
             }
             .aspectRatio(16 / 9, contentMode: .fit)
 
-            // ── Info card ────────────────────────────────────────────────
+            // ── Fixed Info Header ────────────────────────────────────────
+            VStack(alignment: .leading, spacing: 10) {
+                Text(video.title)
+                    .font(.system(.title3, design: .default, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(2)
+
+                Text(formattedDate)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Divider()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .background(Color(.systemBackground))
+
+            // ── Scrollable Description ───────────────────────────────────
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(video.title)
-                        .font(.system(.title3, design: .default, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text(formattedDate)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    if !video.description.isEmpty {
-                        Divider()
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(video.description)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(isDescriptionExpanded ? nil : 3)
-                                .animation(.easeInOut(duration: 0.25), value: isDescriptionExpanded)
-
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    isDescriptionExpanded.toggle()
-                                }
-                            } label: {
-                                Text(isDescriptionExpanded ? "Less" : "More")
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.tint)
-                            }
-                            .buttonStyle(.plain)
+                if !video.description.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(video.description)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(isDescriptionExpanded ? nil : 4)
+                        
+                        HStack {
+                            Spacer()
+                            Text(isDescriptionExpanded ? "Show Less" : "Show More")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.tint)
                         }
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isDescriptionExpanded.toggle()
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
             }
             .background(Color(.systemBackground))
         }

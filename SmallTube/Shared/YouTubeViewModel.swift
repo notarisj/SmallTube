@@ -85,8 +85,22 @@ final class YouTubeViewModel: ObservableObject {
             let data = try await NetworkService.fetchYouTube { apiKey in
                 URL(string: "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoDuration=long&q=\(encoded)&maxResults=\(AppPreferences.resultsCount)&key=\(apiKey)")
             }
-            let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
-            let cached = response.items.map { CachedYouTubeVideo(from: $0) }
+            let searchResponse = try JSONDecoder().decode(YouTubeResponse.self, from: data)
+            let videoIds = searchResponse.items.map { $0.id }.joined(separator: ",")
+            
+            if videoIds.isEmpty {
+                videos = []
+                currentAlert = .noResults
+                return
+            }
+
+            // Fetch full details for these videos (v3/search returns truncated descriptions)
+            let detailsData = try await NetworkService.fetchYouTube { apiKey in
+                URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=\(videoIds)&key=\(apiKey)")
+            }
+            let detailsResponse = try JSONDecoder().decode(YouTubeResponse.self, from: detailsData)
+            let cached = detailsResponse.items.map { CachedYouTubeVideo(from: $0) }
+            
             videos = cached
             currentAlert = cached.isEmpty ? .noResults : nil
         } catch is CancellationError {
