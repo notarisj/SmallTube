@@ -50,11 +50,36 @@ struct VideoPlayerView: View {
 
             // ── Fixed Info Header ────────────────────────────────────────
             VStack(alignment: .leading, spacing: 10) {
-                Text(video.title)
-                    .font(.system(.title3, design: .default, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .lineLimit(2)
+                HStack(alignment: .center, spacing: 12) {
+                    NavigationLink(destination: ChannelVideosView(channel: YouTubeChannel(
+                        id: video.channelId,
+                        title: video.channelTitle,
+                        description: "",
+                        thumbnailURL: video.channelIconURL ?? URL(string: "https://youtube.com")!
+                    ))) {
+                        AsyncImage(url: video.channelIconURL) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                            case .failure:
+                                Image(systemName: "person.crop.circle.fill")
+                                    .resizable()
+                                    .foregroundStyle(.secondary)
+                            default:
+                                Color.secondary.opacity(0.15)
+                            }
+                        }
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+
+                    Text(video.title)
+                        .font(.system(.title3, design: .default, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(2)
+                }
 
                 Text(formattedDate)
                     .font(.subheadline)

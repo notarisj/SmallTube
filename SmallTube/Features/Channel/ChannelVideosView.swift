@@ -11,6 +11,10 @@ struct ChannelVideosView: View {
     @StateObject private var viewModel = ChannelVideosViewModel()
     @State private var isDescriptionExpanded = false
     
+    private var currentChannel: YouTubeChannel {
+        viewModel.detailedChannel ?? channel
+    }
+    
     var body: some View {
         Group {
             if viewModel.videos.isEmpty {
@@ -52,17 +56,20 @@ struct ChannelVideosView: View {
                 }
             }
         }
-        .navigationTitle(channel.title)
+        .navigationTitle(currentChannel.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
-        .task { await viewModel.loadVideos(channelId: channel.id) }
+        .task {
+            await viewModel.loadChannelDetails(channelId: channel.id)
+            await viewModel.loadVideos(channelId: channel.id)
+        }
         .alert(item: $viewModel.currentAlert) { AlertBuilder.buildAlert(for: $0) }
     }
     
     private var channelHeader: some View {
             VStack(spacing: 0) {
                 // MARK: Banner
-                if let bannerURL = channel.bannerURL {
+                if let bannerURL = currentChannel.bannerURL {
                     AsyncImage(url: bannerURL) { phase in
                         if let image = phase.image {
                             image.resizable()
@@ -81,7 +88,7 @@ struct ChannelVideosView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     // MARK: Avatar and Title
                     HStack(alignment: .bottom, spacing: 16) {
-                        AsyncImage(url: channel.thumbnailURL) { phase in
+                        AsyncImage(url: currentChannel.thumbnailURL) { phase in
                             if let image = phase.image {
                                 image.resizable().scaledToFill()
                             } else {
@@ -94,15 +101,15 @@ struct ChannelVideosView: View {
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 4))
                         .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 1)
-                        .offset(y: channel.bannerURL != nil ? -40 : 0) // Overlap banner if exists
-                        .padding(.bottom, channel.bannerURL != nil ? -40 : 0)
+                        .offset(y: currentChannel.bannerURL != nil ? -40 : 0) // Overlap banner if exists
+                        .padding(.bottom, currentChannel.bannerURL != nil ? -40 : 0)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(channel.title)
+                            Text(currentChannel.title)
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .lineLimit(1)
-                            if let customUrl = channel.customUrl {
+                            if let customUrl = currentChannel.customUrl {
                                 Text(customUrl.hasPrefix("@") ? customUrl : "@\(customUrl)")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
@@ -113,23 +120,23 @@ struct ChannelVideosView: View {
                     
                     // MARK: Stats Bar
                     HStack(spacing: 12) {
-                        if let subCount = channel.subscriberCount {
+                        if let subCount = currentChannel.subscriberCount {
                             Text("\(formatCount(subCount)) subscribers")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                        } else if channel.hiddenSubscriberCount == true {
+                        } else if currentChannel.hiddenSubscriberCount == true {
                             Text("Subscribers hidden")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
                         
-                        if channel.subscriberCount != nil || channel.hiddenSubscriberCount == true {
+                        if currentChannel.subscriberCount != nil || currentChannel.hiddenSubscriberCount == true {
                             Text("•")
                                 .font(.subheadline)
                                 .foregroundStyle(.tertiary)
                         }
                         
-                        if let vidCount = channel.videoCount {
+                        if let vidCount = currentChannel.videoCount {
                             Text("\(formatCount(vidCount)) videos")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
@@ -137,9 +144,9 @@ struct ChannelVideosView: View {
                     }
                     
                     // MARK: Description & Detail Page Link
-                    NavigationLink(destination: ChannelDetailView(channel: channel)) {
+                    NavigationLink(destination: ChannelDetailView(channel: currentChannel)) {
                         HStack(spacing: 4) {
-                            Text(channel.description.isEmpty ? "More about this channel" : channel.description)
+                            Text(currentChannel.description.isEmpty ? "More about this channel" : currentChannel.description)
                                 .font(.subheadline)
                                 .foregroundStyle(.primary)
                                 .lineLimit(2)
@@ -157,7 +164,7 @@ struct ChannelVideosView: View {
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, channel.bannerURL != nil ? 0 : 16)
+                .padding(.top, currentChannel.bannerURL != nil ? 0 : 16)
                 .padding(.bottom, 16)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
