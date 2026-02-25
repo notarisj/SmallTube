@@ -9,6 +9,7 @@ import OSLog
 struct SettingsView: View {
     @State private var apiKeyCount: Int = AppPreferences.apiKeys.count
     @AppStorage("resultsCount") private var resultsCount: Int = 10
+    @AppStorage("homeFeedChannelCount") private var homeFeedChannelCount: Int = 15
     @AppStorage("countryCode")  private var countryCode: String = "US"
     @AppStorage("autoplay")     private var autoplay: Bool = true
     @AppStorage("thumbnailQuality") private var thumbnailQuality: ThumbnailQuality = .high
@@ -30,6 +31,7 @@ struct SettingsView: View {
         Form {
             subscriptionsSection
             apiConfigurationSection
+            homeFeedSection
             usageSection
             preferencesSection
         }
@@ -135,6 +137,22 @@ struct SettingsView: View {
                     Text("\(currentKeysCount)")
                         .foregroundStyle(.secondary)
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var homeFeedSection: some View {
+        Section("Home Feed") {
+            Picker("Channels to Mix", selection: $homeFeedChannelCount) {
+                ForEach(5...100, id: \.self) { count in
+                    Text("\(count)").tag(count)
+                }
+            }
+            NavigationLink {
+                FavoriteChannelsView()
+            } label: {
+                Label("Favorite Channels", systemImage: "star.fill")
             }
         }
     }

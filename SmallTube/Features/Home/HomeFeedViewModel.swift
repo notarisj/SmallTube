@@ -69,8 +69,23 @@ final class HomeFeedViewModel: ObservableObject {
             return
         }
 
-        let selected = Array(subscriptions.shuffled().prefix(15))
-        logger.debug("Fetching videos for \(selected.count) randomly-selected subscriptions")
+        let totalToMix = AppPreferences.homeFeedChannelCount
+        let favorites = subscriptions.filter { SubscriptionManager.shared.isFavorite(id: $0.id) }
+        let others = subscriptions.filter { !SubscriptionManager.shared.isFavorite(id: $0.id) }
+        
+        var selected: [YouTubeChannel] = []
+        
+        let shuffledFavorites = favorites.shuffled()
+        if shuffledFavorites.count >= totalToMix {
+            selected = Array(shuffledFavorites.prefix(totalToMix))
+        } else {
+            selected = shuffledFavorites
+            let needed = totalToMix - selected.count
+            let filledWithOthers = Array(others.shuffled().prefix(needed))
+            selected.append(contentsOf: filledWithOthers)
+        }
+        
+        logger.debug("Fetching videos for \(selected.count) curated subscriptions")
 
         do {
             var fetched = try await fetchVideos(from: selected.map { $0.id })

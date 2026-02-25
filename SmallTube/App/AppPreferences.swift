@@ -19,6 +19,7 @@ enum AppPreferences {
         static let apiKey       = "apiKey"
         static let currentApiKeyIndex = "currentApiKeyIndex"
         static let resultsCount = "resultsCount"
+        static let homeFeedChannelCount = "homeFeedChannelCount"
         static let countryCode  = "countryCode"
         static let lastSearches = "lastSearches"
         static let autoplay     = "autoplay"
@@ -68,6 +69,15 @@ enum AppPreferences {
             return value > 0 ? value : 10
         }
         set { UserDefaults.standard.set(newValue, forKey: Key.resultsCount) }
+    }
+
+    /// Number of channels to randomly pick for the home feed. Defaults to 15.
+    static var homeFeedChannelCount: Int {
+        get {
+            let value = UserDefaults.standard.integer(forKey: Key.homeFeedChannelCount)
+            return value > 0 ? value : 15
+        }
+        set { UserDefaults.standard.set(newValue, forKey: Key.homeFeedChannelCount) }
     }
 
     static var countryCode: String {

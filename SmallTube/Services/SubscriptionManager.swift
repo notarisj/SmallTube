@@ -13,9 +13,11 @@ final class SubscriptionManager: ObservableObject {
     static let shared = SubscriptionManager()
 
     private let key = "storedSubscriptionIds"
+    private let favoritesKey = "favoriteChannelIds"
     private let logger = AppLogger.data
 
     @Published private(set) var subscriptionIds: [String] = []
+    @Published private(set) var favoriteChannelIds: [String] = []
 
     private init() { load() }
 
@@ -23,10 +25,12 @@ final class SubscriptionManager: ObservableObject {
 
     private func load() {
         subscriptionIds = UserDefaults.standard.stringArray(forKey: key) ?? []
+        favoriteChannelIds = UserDefaults.standard.stringArray(forKey: favoritesKey) ?? []
     }
 
     private func persist() {
         UserDefaults.standard.set(subscriptionIds, forKey: key)
+        UserDefaults.standard.set(favoriteChannelIds, forKey: favoritesKey)
     }
 
     // MARK: - Public mutations
@@ -41,18 +45,38 @@ final class SubscriptionManager: ObservableObject {
 
     func removeSubscriptionIds(_ ids: [String]) {
         subscriptionIds.removeAll { ids.contains($0) }
+        favoriteChannelIds.removeAll { ids.contains($0) }
         persist()
     }
 
     func removeSubscriptions(at offsets: IndexSet) {
+        let idsToRemove = offsets.map { subscriptionIds[$0] }
         subscriptionIds.remove(atOffsets: offsets)
+        favoriteChannelIds.removeAll { idsToRemove.contains($0) }
         persist()
     }
 
     func clearSubscriptions() {
         subscriptionIds = []
+        favoriteChannelIds = []
         UserDefaults.standard.removeObject(forKey: key)
+        UserDefaults.standard.removeObject(forKey: favoritesKey)
         logger.info("All subscriptions cleared")
+    }
+
+    // MARK: - Favorites
+
+    func toggleFavorite(id: String) {
+        if let index = favoriteChannelIds.firstIndex(of: id) {
+            favoriteChannelIds.remove(at: index)
+        } else {
+            favoriteChannelIds.append(id)
+        }
+        persist()
+    }
+
+    func isFavorite(id: String) -> Bool {
+        favoriteChannelIds.contains(id)
     }
 
     // MARK: - CSV Import
