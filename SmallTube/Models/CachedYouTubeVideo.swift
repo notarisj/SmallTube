@@ -13,9 +13,22 @@ struct CachedYouTubeVideo: Identifiable, Codable {
     let description: String
     let thumbnailURL: URL
     let publishedAt: Date
+    let durationSeconds: Int?
     let channelTitle: String
     let channelId: String
     var channelIconURL: URL?
+
+    var formattedDuration: String? {
+        guard let seconds = durationSeconds, seconds > 0 else { return nil }
+        let h = seconds / 3600
+        let m = (seconds % 3600) / 60
+        let s = seconds % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        } else {
+            return String(format: "%d:%02d", m, s)
+        }
+    }
 }
 
 extension CachedYouTubeVideo {
@@ -26,6 +39,7 @@ extension CachedYouTubeVideo {
         self.description = apiVideo.description
         self.thumbnailURL = apiVideo.thumbnailURL
         self.publishedAt = apiVideo.publishedAt
+        self.durationSeconds = apiVideo.durationSeconds
         self.channelTitle = apiVideo.channelTitle
         self.channelId = apiVideo.channelId
         self.channelIconURL = nil

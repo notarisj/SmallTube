@@ -86,6 +86,17 @@ struct VideoRowView: View {
                 }
             }
             .aspectRatio(16 / 9, contentMode: .fit)
+
+            if let duration = video.formattedDuration {
+                Text(duration)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(Color.black.opacity(0.8))
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .padding(6)
+            }
         }
     }
 

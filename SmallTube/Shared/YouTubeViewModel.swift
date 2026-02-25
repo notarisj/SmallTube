@@ -159,7 +159,7 @@ final class YouTubeViewModel: ObservableObject {
     private func fetchTrending() async {
         do {
             let data = try await NetworkService.fetchYouTube { apiKey in
-                URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=\(AppPreferences.resultsCount)&regionCode=\(AppPreferences.countryCode)&key=\(apiKey)")
+                URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&chart=mostPopular&maxResults=\(AppPreferences.resultsCount)&regionCode=\(AppPreferences.countryCode)&key=\(apiKey)")
             }
             let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
             var cached = response.items.map { CachedYouTubeVideo(from: $0) }
