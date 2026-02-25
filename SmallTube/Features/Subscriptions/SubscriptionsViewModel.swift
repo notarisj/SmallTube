@@ -169,7 +169,7 @@ final class SubscriptionsViewModel: ObservableObject {
 
         do {
             let data = try await NetworkService.fetchYouTube { apiKey in
-                URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=\(id)&key=\(apiKey)")
+                URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings,topicDetails,status,contentDetails,localizations&id=\(id)&key=\(apiKey)")
             }
             let response = try JSONDecoder().decode(ChannelResponse.self, from: data)
             guard response.items.first != nil else {
@@ -190,16 +190,11 @@ final class SubscriptionsViewModel: ObservableObject {
         let idsString = ids.joined(separator: ",")
         do {
             let data = try await NetworkService.fetchYouTube { apiKey in
-                URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=\(idsString)&key=\(apiKey)")
+                URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings,topicDetails,status,contentDetails,localizations&id=\(idsString)&key=\(apiKey)")
             }
             let response = try JSONDecoder().decode(ChannelResponse.self, from: data)
-            return response.items.map {
-                YouTubeChannel(
-                    id: $0.id,
-                    title: $0.snippet.title,
-                    description: $0.snippet.description,
-                    thumbnailURL: $0.snippet.thumbnails.best
-                )
+            return response.items.map { item in
+                YouTubeChannel(fromItem: item)
             }
         } catch {
             logger.error("Channel batch failed: \(error.localizedDescription, privacy: .public)")
@@ -227,12 +222,89 @@ struct ChannelResponse: Decodable {
 struct ChannelResponseItem: Decodable {
     let id: String
     let snippet: ChannelResponseSnippet
+    let statistics: ChannelResponseStatistics?
+    let brandingSettings: ChannelResponseBrandingSettings?
+    let contentDetails: ChannelResponseContentDetails?
+    let topicDetails: ChannelResponseTopicDetails?
+    let status: ChannelResponseStatus?
+    let auditDetails: ChannelResponseAuditDetails?
+    let contentOwnerDetails: ChannelResponseContentOwnerDetails?
+    let localizations: [String: ChannelResponseLocalization]?
+}
+
+struct ChannelResponseContentOwnerDetails: Decodable {
+    let contentOwner: String?
+    let timeLinked: String?
+}
+
+struct ChannelResponseContentDetails: Decodable {
+    let relatedPlaylists: [String: String]?
+}
+
+struct ChannelResponseTopicDetails: Decodable {
+    let topicIds: [String]?
+    let topicCategories: [String]?
+}
+
+struct ChannelResponseStatus: Decodable {
+    let privacyStatus: String?
+    let isLinked: Bool?
+    let longUploadsStatus: String?
+    let madeForKids: Bool?
+    let selfDeclaredMadeForKids: Bool?
+}
+
+struct ChannelResponseAuditDetails: Decodable {
+    let overallGoodStanding: Bool?
+    let communityGuidelinesGoodStanding: Bool?
+    let copyrightStrikesGoodStanding: Bool?
+    let contentIdClaimsGoodStanding: Bool?
 }
 
 struct ChannelResponseSnippet: Decodable {
     let title: String
     let description: String
     let thumbnails: ThumbnailSet
+    let customUrl: String?
+    let publishedAt: String?
+    let country: String?
+    let defaultLanguage: String?
+    let localized: ChannelResponseLocalization?
+}
+
+struct ChannelResponseLocalization: Decodable {
+    let title: String?
+    let description: String?
+}
+
+struct ChannelResponseStatistics: Decodable {
+    let viewCount: String?
+    let subscriberCount: String?
+    let hiddenSubscriberCount: Bool?
+    let videoCount: String?
+}
+
+struct ChannelResponseBrandingSettings: Decodable {
+    struct Channel: Decodable {
+        let title: String?
+        let description: String?
+        let keywords: String?
+        let trackingAnalyticsAccountId: String?
+        let unsubscribedTrailer: String?
+        let defaultLanguage: String?
+        let country: String?
+    }
+    struct Watch: Decodable {
+        let textColor: String?
+        let backgroundColor: String?
+        let featuredPlaylistId: String?
+    }
+    struct Image: Decodable {
+        let bannerExternalUrl: URL?
+    }
+    let channel: Channel?
+    let watch: Watch?
+    let image: Image?
 }
 
 struct SearchResponse: Decodable {

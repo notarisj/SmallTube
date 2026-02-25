@@ -11,6 +11,7 @@ final class ChannelVideosViewModel: ObservableObject {
     @Published var videos: [CachedYouTubeVideo] = []
     @Published var currentAlert: AlertType?
     @Published var isLoading = false
+    @Published var detailedChannel: YouTubeChannel?
 
     private var cacheTTL: TimeInterval { TimeInterval(AppPreferences.cacheTimeout.rawValue) }
     private let logger = AppLogger.network
@@ -37,8 +38,32 @@ final class ChannelVideosViewModel: ObservableObject {
         await fetchVideos(channelId: channelId, cache: channelCache)
     }
 
-    // MARK: - Private
+    func loadChannelDetails(channelId: String, ignoreCache: Bool = false) async {
+        guard !AppPreferences.apiKeys.isEmpty else { return }
+        
+        // 1. Check Cache
+        let detailsCache = CacheService<YouTubeChannel>(filename: "channel_details_\(channelId).json", ttl: cacheTTL)
+        if !ignoreCache, let cachedChannel = detailsCache.load(), !detailsCache.isExpired {
+            logger.debug("Cache hit for channel details \(channelId, privacy: .public)")
+            self.detailedChannel = cachedChannel
+            return
+        }
 
+        // 2. Fetch from Network
+        do {
+            let data = try await NetworkService.fetchYouTube { apiKey in
+                URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings,topicDetails,status,contentDetails,localizations&id=\(channelId)&key=\(apiKey)")
+            }
+            let response = try JSONDecoder().decode(ChannelResponse.self, from: data)
+            if let first = response.items.first {
+                let channel = YouTubeChannel(fromItem: first)
+                self.detailedChannel = channel
+                detailsCache.save(channel) // Save to cache
+            }
+        } catch {
+            logger.error("Failed to load generic detailed channel info: \(error.localizedDescription)")
+        }
+    }
     private func fetchVideos(
         channelId: String,
         cache: CacheService<[CachedYouTubeVideo]>

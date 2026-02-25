@@ -41,6 +41,7 @@
 		CB7F1A681B044E719F239C31 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20D1CB0BC4D4BAD934E802B /* AppState.swift */; };
 		D6C6BAD28D71D0787AD2F742 /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F5DE5927269C2BDA4178B9 /* AppPreferences.swift */; };
 		FCD7DB074F1246D8FE5E1EEF /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F5C53E0120DF2ACD6644327 /* KeychainManager.swift */; };
+		1E0741B8C474F86E1CEC2866 /* ChannelDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B7A268FA417CCD171E4376 /* ChannelDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -80,6 +81,7 @@
 		E3376C8EC45055E804749FE2 /* NetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkService.swift; sourceTree = "<group>"; };
 		F0A65CE07E7C98AF1CB1FE7E /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
 		FB8987B46490DB373F443563 /* VideoRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRowView.swift; sourceTree = "<group>"; };
+		02B7A268FA417CCD171E4376 /* ChannelDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -238,6 +240,7 @@
 		05DBD3352F4C62CB00F44EAC /* Channel */ = {
 			isa = PBXGroup;
 			children = (
+				02B7A268FA417CCD171E4376 /* ChannelDetailView.swift */,
 				0519A97D2D0AC58000ABE3AE /* ChannelVideosViewModel.swift */,
 				0519A97B2D0AC57500ABE3AE /* ChannelVideosView.swift */,
 			);
@@ -335,6 +338,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1E0741B8C474F86E1CEC2866 /* ChannelDetailView.swift in Sources */,
 				FCD7DB074F1246D8FE5E1EEF /* KeychainManager.swift in Sources */,
 				450CE3AE9E14E578DBE6EF0E /* APIKeySettingsView.swift in Sources */,
 				D6C6BAD28D71D0787AD2F742 /* AppPreferences.swift in Sources */,
