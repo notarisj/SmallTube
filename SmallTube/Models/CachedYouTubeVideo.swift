@@ -15,6 +15,7 @@ struct CachedYouTubeVideo: Identifiable, Codable {
     let publishedAt: Date
     let channelTitle: String
     let channelId: String
+    var channelIconURL: URL?
 }
 
 extension CachedYouTubeVideo {
@@ -27,5 +28,6 @@ extension CachedYouTubeVideo {
         self.publishedAt = apiVideo.publishedAt
         self.channelTitle = apiVideo.channelTitle
         self.channelId = apiVideo.channelId
+        self.channelIconURL = nil
     }
 }

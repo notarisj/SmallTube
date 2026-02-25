@@ -73,7 +73,16 @@ final class HomeFeedViewModel: ObservableObject {
         logger.debug("Fetching videos for \(selected.count) randomly-selected subscriptions")
 
         do {
-            let fetched = try await fetchVideos(from: selected.map { $0.id })
+            var fetched = try await fetchVideos(from: selected.map { $0.id })
+            
+            // Assign channel thumbnails from already loaded subscriptions
+            let subDict = Dictionary(uniqueKeysWithValues: subscriptions.map { ($0.id, $0.thumbnailURL) })
+            for i in 0..<fetched.count {
+                if let url = subDict[fetched[i].channelId] {
+                    fetched[i].channelIconURL = url
+                }
+            }
+            
             videos = fetched
             cache.save(fetched)
             currentAlert = fetched.isEmpty ? .noResults : nil

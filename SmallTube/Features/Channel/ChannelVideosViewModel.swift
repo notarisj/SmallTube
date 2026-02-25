@@ -75,6 +75,15 @@ final class ChannelVideosViewModel: ObservableObject {
         let videoResponse = try JSONDecoder().decode(VideoListResponse.self, from: data)
         let valid = videoResponse.items.filter { ($0.durationSeconds ?? Int.max) >= 180 }
         logger.debug("Channel \(channelId, privacy: .public): \(valid.count)/\(videoResponse.items.count) videos kept (≥3 min)")
-        return valid.map { CachedYouTubeVideo(from: $0) }
+        var cached = valid.map { CachedYouTubeVideo(from: $0) }
+        
+        if let thumbnails = try? await NetworkService.fetchChannelThumbnails(for: [channelId]),
+           let iconURL = thumbnails[channelId] {
+            for i in 0..<cached.count {
+                cached[i].channelIconURL = iconURL
+            }
+        }
+        
+        return cached
     }
 }

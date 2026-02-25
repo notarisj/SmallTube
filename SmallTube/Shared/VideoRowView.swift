@@ -89,10 +89,31 @@ struct VideoRowView: View {
         }
     }
 
-    // MARK: - Channel avatar (initials fallback)
+    // MARK: - Channel avatar
 
     @ViewBuilder
     private var channelAvatar: some View {
+        if let iconURL = video.channelIconURL {
+            AsyncImage(url: iconURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                case .failure:
+                    fallbackAvatar
+                default:
+                    Color(uiColor: .systemGray5)
+                }
+            }
+            .frame(width: 34, height: 34)
+            .clipShape(Circle())
+        } else {
+            fallbackAvatar
+        }
+    }
+
+    private var fallbackAvatar: some View {
         ZStack {
             Circle()
                 .fill(avatarGradient)

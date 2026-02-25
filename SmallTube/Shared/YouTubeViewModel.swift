@@ -99,7 +99,16 @@ final class YouTubeViewModel: ObservableObject {
                 URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=\(videoIds)&key=\(apiKey)")
             }
             let detailsResponse = try JSONDecoder().decode(YouTubeResponse.self, from: detailsData)
-            let cached = detailsResponse.items.map { CachedYouTubeVideo(from: $0) }
+            var cached = detailsResponse.items.map { CachedYouTubeVideo(from: $0) }
+            
+            let channelIds = cached.map { $0.channelId }
+            if let thumbnails = try? await NetworkService.fetchChannelThumbnails(for: channelIds) {
+                for i in 0..<cached.count {
+                    if let url = thumbnails[cached[i].channelId] {
+                        cached[i].channelIconURL = url
+                    }
+                }
+            }
             
             videos = cached
             currentAlert = cached.isEmpty ? .noResults : nil
@@ -153,7 +162,17 @@ final class YouTubeViewModel: ObservableObject {
                 URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&maxResults=\(AppPreferences.resultsCount)&regionCode=\(AppPreferences.countryCode)&key=\(apiKey)")
             }
             let response = try JSONDecoder().decode(YouTubeResponse.self, from: data)
-            let cached = response.items.map { CachedYouTubeVideo(from: $0) }
+            var cached = response.items.map { CachedYouTubeVideo(from: $0) }
+            
+            let channelIds = cached.map { $0.channelId }
+            if let thumbnails = try? await NetworkService.fetchChannelThumbnails(for: channelIds) {
+                for i in 0..<cached.count {
+                    if let url = thumbnails[cached[i].channelId] {
+                        cached[i].channelIconURL = url
+                    }
+                }
+            }
+            
             videos = cached
             currentAlert = cached.isEmpty ? .noResults : nil
             trendingCache.save(cached)

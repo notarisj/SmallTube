@@ -28,6 +28,54 @@ struct NetworkService {
 
     // MARK: - Fetch
 
+    private static let thumbnailsCache = CacheService<[String: URL]>(filename: "channelThumbnails.json", ttl: 86400 * 30) // 30 days cache
+
+    /// Fetches channel thumbnails in bulk. Returns a dictionary mapping channel ID to thumbnail URL.
+    /// Only fetches thumbnails that are not already cached.
+    static func fetchChannelThumbnails(for channelIds: [String]) async throws -> [String: URL] {
+        guard !channelIds.isEmpty else { return [:] }
+        let uniqueIds = Array(Set(channelIds))
+        
+        var cachedMap = thumbnailsCache.load() ?? [:]
+        var result: [String: URL] = [:]
+        var idsToFetch: [String] = []
+
+        for id in uniqueIds {
+            if let cachedURL = cachedMap[id] {
+                result[id] = cachedURL
+            } else {
+                idsToFetch.append(id)
+            }
+        }
+
+        if idsToFetch.isEmpty {
+            AppLogger.network.debug("Channel thumbnails: all \(result.count) loaded from cache")
+            return result
+        }
+
+        AppLogger.network.debug("Channel thumbnails: \(result.count) loaded from cache, fetching \(idsToFetch.count) from API")
+
+        // Chunk into max 50 ids per request (YouTube API limit)
+        let chunkedIds = stride(from: 0, to: idsToFetch.count, by: 50).map {
+            Array(idsToFetch[$0..<min($0 + 50, idsToFetch.count)])
+        }
+        for chunk in chunkedIds {
+            let idsString = chunk.joined(separator: ",")
+            let data = try await fetchYouTube { apiKey in
+                URL(string: "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=\(idsString)&key=\(apiKey)")
+            }
+            let response = try JSONDecoder().decode(ChannelResponse.self, from: data)
+            for item in response.items {
+                let bestURL = item.snippet.thumbnails.best
+                result[item.id] = bestURL
+                cachedMap[item.id] = bestURL
+            }
+        }
+        
+        thumbnailsCache.save(cachedMap)
+        return result
+    }
+
     /// Performs a GET request and returns raw `Data`. Throws `NetworkError` on HTTP failures.
     static func fetch(url: URL) async throws -> Data {
         let (data, response) = try await session.data(from: url)
