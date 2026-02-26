@@ -26,10 +26,7 @@ struct TrendingView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(viewModel.videos) { video in
-                            NavigationLink(destination: VideoPlayerView(video: video)) {
-                                VideoRowView(video: video)
-                            }
-                            .buttonStyle(.plain)
+                            VideoRowView(video: video)
                         }
                     }
                 }

@@ -8,6 +8,7 @@ import WebKit
 
 struct VideoPlayerView: View {
     let video: CachedYouTubeVideo
+    var isFromChannelView: Bool = false
 
     @State private var isLoading = true
     @State private var isDescriptionExpanded = false
@@ -51,28 +52,19 @@ struct VideoPlayerView: View {
             // ── Fixed Info Header ────────────────────────────────────────
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center, spacing: 12) {
-                    NavigationLink(destination: ChannelVideosView(channel: YouTubeChannel(
-                        id: video.channelId,
-                        title: video.channelTitle,
-                        description: "",
-                        thumbnailURL: video.channelIconURL ?? URL(string: "https://youtube.com")!
-                    ))) {
-                        AsyncImage(url: video.channelIconURL) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image.resizable().scaledToFill()
-                            case .failure:
-                                Image(systemName: "person.crop.circle.fill")
-                                    .resizable()
-                                    .foregroundStyle(.secondary)
-                            default:
-                                Color.secondary.opacity(0.15)
-                            }
+                    if isFromChannelView {
+                        channelIconImage
+                    } else {
+                        NavigationLink(destination: ChannelVideosView(channel: YouTubeChannel(
+                            id: video.channelId,
+                            title: video.channelTitle,
+                            description: "",
+                            thumbnailURL: video.channelIconURL ?? URL(string: "https://youtube.com")!
+                        ))) {
+                            channelIconImage
                         }
-                        .frame(width: 40, height: 40)
-                        .clipShape(Circle())
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
 
                     Text(video.title)
                         .font(.system(.title3, design: .default, weight: .semibold))
@@ -144,6 +136,23 @@ struct VideoPlayerView: View {
             }
         }
         .toolbar(.hidden, for: .tabBar)
+    }
+
+    private var channelIconImage: some View {
+        AsyncImage(url: video.channelIconURL) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFill()
+            case .failure:
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .foregroundStyle(.secondary)
+            default:
+                Color.secondary.opacity(0.15)
+            }
+        }
+        .frame(width: 40, height: 40)
+        .clipShape(Circle())
     }
 }
 

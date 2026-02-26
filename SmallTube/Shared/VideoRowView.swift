@@ -11,48 +11,68 @@ import SwiftUI
 
 struct VideoRowView: View {
     let video: CachedYouTubeVideo
+    var showChannelLink: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // ── Thumbnail ──────────────────────────────────────────────────
-            thumbnailSection
+            NavigationLink(destination: VideoPlayerView(video: video, isFromChannelView: !showChannelLink)) {
+                thumbnailSection
+            }
+            .buttonStyle(.plain)
 
             // ── Metadata row ───────────────────────────────────────────────
             HStack(alignment: .top, spacing: 10) {
-                channelAvatar
+                if showChannelLink {
+                    NavigationLink(destination: ChannelVideosView(channel: YouTubeChannel(
+                        id: video.channelId,
+                        title: video.channelTitle,
+                        description: "",
+                        thumbnailURL: video.channelIconURL ?? URL(string: "https://example.com")!
+                    ))) {
+                        channelAvatar
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    channelAvatar
+                }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(video.title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .lineLimit(2)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
+                NavigationLink(destination: VideoPlayerView(video: video, isFromChannelView: !showChannelLink)) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(video.title)
+                            .font(.system(size: 15, weight: .semibold))
+                            .lineLimit(2)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .multilineTextAlignment(.leading)
 
-                    HStack(spacing: 4) {
-                        if !video.channelTitle.isEmpty {
-                            Text(video.channelTitle)
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundStyle(.secondary)
-                        }
-                        if !video.channelTitle.isEmpty {
-                            Text("·")
+                        HStack(spacing: 4) {
+                            if !video.channelTitle.isEmpty {
+                                Text(video.channelTitle)
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundStyle(.secondary)
+                            }
+                            if !video.channelTitle.isEmpty {
+                                Text("·")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Text(video.publishedAt.relativeShortString)
                                 .font(.system(size: 13))
-                                .foregroundStyle(.tertiary)
-                        }
-                        Text(video.publishedAt.relativeShortString)
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                        
-                        if let views = video.formattedViewCount {
-                            Spacer(minLength: 8)
-                            Text("\(views) views")
-                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(.secondary)
-                        } else {
-                            Spacer(minLength: 0)
+                            
+                            if let views = video.formattedViewCount {
+                                Spacer(minLength: 8)
+                                Text("\(views) views")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Spacer(minLength: 0)
+                            }
                         }
                     }
                 }
+                .buttonStyle(.plain)
 
                 Spacer(minLength: 0)
             }
