@@ -10,6 +10,7 @@ struct APIKeySettingsView: View {
     @State private var isValidating = false
     @State private var validationStatuses: [Int: Bool] = [:]
     @State private var apiQuotaUsage: [String: Int] = AppPreferences.apiQuotaUsage
+    @State private var apiKeyNames: [String: String] = AppPreferences.apiKeyNames
     
     private var currentKeys: [String] {
         apiKey.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
@@ -60,11 +61,13 @@ struct APIKeySettingsView: View {
             }
         }
         .onChange(of: apiKey) { AppPreferences.apiKey = apiKey }
+        .onChange(of: apiKeyNames) { AppPreferences.apiKeyNames = apiKeyNames }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
             showApiKey = false
         }
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
             apiQuotaUsage = AppPreferences.apiQuotaUsage
+            apiKeyNames = AppPreferences.apiKeyNames
         }
         .sheet(isPresented: $showApiKeyInstructions) {
             InstructionSheet(title: "API Key Guide", steps: [
@@ -78,14 +81,29 @@ struct APIKeySettingsView: View {
         }
     }
     
+    private func nameBinding(for key: String, index: Int) -> Binding<String> {
+        Binding(
+            get: {
+                apiKeyNames[key] ?? "Key \(index + 1)"
+            },
+            set: { newValue in
+                if newValue.isEmpty {
+                    apiKeyNames.removeValue(forKey: key)
+                } else {
+                    apiKeyNames[key] = newValue
+                }
+            }
+        )
+    }
+
     private func apiKeyRow(index: Int, key: String, keys: [String]) -> some View {
         let used = apiQuotaUsage[key] ?? 0
         let limit = 10000
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Key \(index + 1)")
-                    .layoutPriority(1)
+                TextField("Key \(index + 1)", text: nameBinding(for: key, index: index))
+                    .lineLimit(1)
 
                 Spacer()
 

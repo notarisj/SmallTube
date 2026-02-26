@@ -27,6 +27,7 @@ enum AppPreferences {
         static let cacheTimeout = "cacheTimeout"
         static let totalDataBytesUsed = "totalDataBytesUsed"
         static let apiQuotaUsage = "apiQuotaUsage"
+        static let apiKeyNames = "apiKeyNames"
         static let lastQuotaResetDate = "lastQuotaResetDate"
     }
 
@@ -126,6 +127,21 @@ enum AppPreferences {
         set {
             if let data = try? JSONEncoder().encode(newValue) {
                 UserDefaults.standard.set(data, forKey: Key.apiQuotaUsage)
+            }
+        }
+    }
+
+    static var apiKeyNames: [String: String] {
+        get {
+            if let data = UserDefaults.standard.data(forKey: Key.apiKeyNames),
+               let dict = try? JSONDecoder().decode([String: String].self, from: data) {
+                return dict
+            }
+            return [:]
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: Key.apiKeyNames)
             }
         }
     }
