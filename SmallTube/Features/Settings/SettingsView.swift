@@ -24,6 +24,7 @@ struct SettingsView: View {
     @State private var showImportInstructions = false
     @State private var showClearConfirmation = false
     @State private var showResetTrackingConfirmation = false
+    @State private var showApiKeyInstructions = false
 
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
@@ -82,6 +83,16 @@ struct SettingsView: View {
                 InstructionStep(6, "Return here and tap 'Import CSV File'.")
             ])
         }
+        .sheet(isPresented: $showApiKeyInstructions) {
+            InstructionSheet(title: "API Key Guide", steps: [
+                InstructionStep(1, "Go to Google Cloud Console.", link: ("Open Console", "https://console.cloud.google.com/")),
+                InstructionStep(2, "Create or select a project."),
+                InstructionStep(3, "Search 'YouTube Data API v3' in the library and enable it."),
+                InstructionStep(4, "Go to Credentials → Create Credentials → API Key."),
+                InstructionStep(5, "Copy the API key."),
+                InstructionStep(6, "Paste it into the field above.")
+            ])
+        }
     }
 
     // MARK: - Sections
@@ -132,6 +143,12 @@ struct SettingsView: View {
     @ViewBuilder
     private var apiConfigurationSection: some View {
         Section("API Configuration") {
+            Button {
+                showApiKeyInstructions = true
+            } label: {
+                Label("How to Get an API Key", systemImage: "questionmark.circle")
+            }
+
             NavigationLink {
                 APIKeySettingsView()
             } label: {

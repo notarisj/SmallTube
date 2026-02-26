@@ -4,7 +4,6 @@ import LocalAuthentication
 struct APIKeySettingsView: View {
     @State private var apiKey: String = AppPreferences.apiKey
     
-    @State private var showApiKeyInstructions = false
     @State private var showApiKey = false
     @State private var newApiKey = ""
     @State private var isValidating = false
@@ -36,14 +35,6 @@ struct APIKeySettingsView: View {
             Section {
                 testKeysRow(keys: currentKeys)
             }
-            
-            Section {
-                Button {
-                    showApiKeyInstructions = true
-                } label: {
-                    Text("How to Get an API Key")
-                }
-            }
         }
         .navigationTitle("API Keys")
         .navigationBarTitleDisplayMode(.inline)
@@ -68,16 +59,6 @@ struct APIKeySettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
             apiQuotaUsage = AppPreferences.apiQuotaUsage
             apiKeyNames = AppPreferences.apiKeyNames
-        }
-        .sheet(isPresented: $showApiKeyInstructions) {
-            InstructionSheet(title: "API Key Guide", steps: [
-                InstructionStep(1, "Go to Google Cloud Console.", link: ("Open Console", "https://console.cloud.google.com/")),
-                InstructionStep(2, "Create or select a project."),
-                InstructionStep(3, "Search 'YouTube Data API v3' in the library and enable it."),
-                InstructionStep(4, "Go to Credentials → Create Credentials → API Key."),
-                InstructionStep(5, "Copy the API key."),
-                InstructionStep(6, "Paste it into the field above.")
-            ])
         }
     }
     
