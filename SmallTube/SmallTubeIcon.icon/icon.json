@@ -4,8 +4,8 @@
     {
       "layers" : [
         {
-          "image-name" : "SmallTube.png",
-          "name" : "SmallTube",
+          "image-name" : "Icon.png",
+          "name" : "Icon",
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
