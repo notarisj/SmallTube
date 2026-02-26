@@ -15,7 +15,7 @@ struct SettingsView: View {
     @AppStorage("thumbnailQuality") private var thumbnailQuality: ThumbnailQuality = .high
     @AppStorage("cacheTimeout") private var cacheTimeout: CacheTimeout = .fiveMinutes
     @AppStorage("totalDataBytesUsed") private var totalDataBytesUsed: Int = 0
-    @AppStorage("totalApiQuotaUsed") private var totalApiQuotaUsed: Int = 0
+    @State private var totalApiQuotaUsed: Int = AppPreferences.totalApiQuotaUsed
 
     @Environment(\.dismiss) private var dismiss
 
@@ -37,6 +37,10 @@ struct SettingsView: View {
         }
         .onAppear {
             apiKeyCount = AppPreferences.apiKeys.count
+            totalApiQuotaUsed = AppPreferences.totalApiQuotaUsed
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            totalApiQuotaUsed = AppPreferences.totalApiQuotaUsed
         }
         .navigationTitle("Settings")
         .toolbar {
@@ -183,6 +187,7 @@ struct SettingsView: View {
             ) {
                 Button("Cancel", role: .cancel) {}
                 Button("Reset", role: .destructive) {
+                    AppPreferences.apiQuotaUsage = [:]
                     totalApiQuotaUsed = 0
                     totalDataBytesUsed = 0
                 }

@@ -9,6 +9,7 @@ struct APIKeySettingsView: View {
     @State private var newApiKey = ""
     @State private var isValidating = false
     @State private var validationStatuses: [Int: Bool] = [:]
+    @State private var apiQuotaUsage: [String: Int] = AppPreferences.apiQuotaUsage
     
     private var currentKeys: [String] {
         apiKey.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
@@ -25,7 +26,10 @@ struct APIKeySettingsView: View {
             } header: {
                 Text("API Keys")
             } footer: {
-                Text("The app will automatically rotate to the next key if the quota is exceeded.")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("The app will automatically rotate to the next key if the quota is exceeded.")
+                    Text("API usage is an estimate tracked locally. Quotas reset locally at midnight Pacific Time.")
+                }
             }
             
             Section {
@@ -59,6 +63,9 @@ struct APIKeySettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
             showApiKey = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            apiQuotaUsage = AppPreferences.apiQuotaUsage
+        }
         .sheet(isPresented: $showApiKeyInstructions) {
             InstructionSheet(title: "API Key Guide", steps: [
                 InstructionStep(1, "Go to Google Cloud Console.", link: ("Open Console", "https://console.cloud.google.com/")),
@@ -72,32 +79,51 @@ struct APIKeySettingsView: View {
     }
     
     private func apiKeyRow(index: Int, key: String, keys: [String]) -> some View {
-        HStack {
-            Text("Key \(index + 1)")
-                .layoutPriority(1)
+        let used = apiQuotaUsage[key] ?? 0
+        let limit = 10000
 
-            Spacer()
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Key \(index + 1)")
+                    .layoutPriority(1)
 
-            HStack(spacing: 8) {
-                if showApiKey {
-                    TextField("", text: apiKeyBinding(index: index))
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .multilineTextAlignment(.trailing)
-                        .lineLimit(1)
-                        .onChange(of: keys[index]) { validationStatuses[index] = nil }
-                } else {
-                    Text("••••••••••••••••")
-                        .foregroundColor(.secondary)
-                }
+                Spacer()
 
-                if let isValid = validationStatuses[index] {
-                    Image(systemName: isValid ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(isValid ? .green : .red)
-                        .font(.body)
+                HStack(spacing: 8) {
+                    if showApiKey {
+                        TextField("", text: apiKeyBinding(index: index))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .multilineTextAlignment(.trailing)
+                            .lineLimit(1)
+                            .onChange(of: keys[index]) { validationStatuses[index] = nil }
+                    } else {
+                        Text("••••••••••••••••")
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let isValid = validationStatuses[index] {
+                        Image(systemName: isValid ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundStyle(isValid ? .green : .red)
+                            .font(.body)
+                    }
                 }
             }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                ProgressView(value: min(Double(used), Double(limit)), total: Double(limit))
+                    .tint(used >= limit ? .red : (used > 8000 ? .orange : .accentColor))
+                
+                HStack {
+                    Text("Quota Usage")
+                    Spacer()
+                    Text("\(used) / 10,000")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
         }
+        .padding(.vertical, 4)
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 var current = keys

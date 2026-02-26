@@ -26,7 +26,8 @@ enum AppPreferences {
         static let thumbnailQuality = "thumbnailQuality"
         static let cacheTimeout = "cacheTimeout"
         static let totalDataBytesUsed = "totalDataBytesUsed"
-        static let totalApiQuotaUsed = "totalApiQuotaUsed"
+        static let apiQuotaUsage = "apiQuotaUsage"
+        static let lastQuotaResetDate = "lastQuotaResetDate"
     }
 
     // MARK: - Typed accessors
@@ -114,9 +115,56 @@ enum AppPreferences {
         set { UserDefaults.standard.set(Int(newValue), forKey: Key.totalDataBytesUsed) }
     }
 
+    static var apiQuotaUsage: [String: Int] {
+        get {
+            if let data = UserDefaults.standard.data(forKey: Key.apiQuotaUsage),
+               let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
+                return dict
+            }
+            return [:]
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: Key.apiQuotaUsage)
+            }
+        }
+    }
+
+    static var lastQuotaResetDate: Date? {
+        get { UserDefaults.standard.object(forKey: Key.lastQuotaResetDate) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: Key.lastQuotaResetDate) }
+    }
+
     static var totalApiQuotaUsed: Int {
-        get { UserDefaults.standard.integer(forKey: Key.totalApiQuotaUsed) }
-        set { UserDefaults.standard.set(newValue, forKey: Key.totalApiQuotaUsed) }
+        apiQuotaUsage.values.reduce(0, +)
+    }
+
+    static func checkAndResetQuotaIfNeeded() {
+        let now = Date()
+        var ptCalendar = Calendar(identifier: .gregorian)
+        ptCalendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+
+        if let lastReset = lastQuotaResetDate {
+            if !ptCalendar.isDate(now, inSameDayAs: lastReset) {
+                apiQuotaUsage = [:]
+            }
+        } else {
+            apiQuotaUsage = [:]
+        }
+        lastQuotaResetDate = now
+    }
+
+    static func incrementApiQuotaUsage(for key: String, cost: Int) {
+        checkAndResetQuotaIfNeeded()
+        var current = apiQuotaUsage
+        current[key, default: 0] += cost
+        apiQuotaUsage = current
+    }
+
+    static func setApiQuotaExceeded(for key: String) {
+        var current = apiQuotaUsage
+        current[key] = 10000
+        apiQuotaUsage = current
     }
 }
 

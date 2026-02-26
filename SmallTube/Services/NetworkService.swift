@@ -120,12 +120,13 @@ struct NetworkService {
                 if urlString.contains("/search") {
                     quotaCost = 100
                 }
-                AppPreferences.totalApiQuotaUsed += quotaCost
+                AppPreferences.incrementApiQuotaUsage(for: key, cost: quotaCost)
 
                 return data
             } catch let error as NetworkError {
                 if case .httpError(let code) = error, code == 403 {
                     AppLogger.network.warning("API key quota exceeded: \(key.prefix(8))... Rotating.")
+                    AppPreferences.setApiQuotaExceeded(for: key)
                     lastError = error
                     continue
                 }
