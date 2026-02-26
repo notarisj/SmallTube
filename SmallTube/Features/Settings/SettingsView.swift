@@ -32,8 +32,8 @@ struct SettingsView: View {
             subscriptionsSection
             apiConfigurationSection
             homeFeedSection
-            usageSection
             preferencesSection
+            usageSection
         }
         .onAppear {
             apiKeyCount = AppPreferences.apiKeys.count
@@ -159,7 +159,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var usageSection: some View {
-        Section("Usage") {
+        Section {
             HStack {
                 Text("API Quota Used")
                 Spacer()
@@ -189,6 +189,10 @@ struct SettingsView: View {
             } message: {
                 Text("Are you sure you want to reset all data usage and API quota tracking statistics?")
             }
+        } header: {
+            Text("Usage")
+        } footer: {
+            Text("Data usage is only calculated for API requests, not video playback.")
         }
     }
 
