@@ -10,6 +10,7 @@ struct ChannelVideosView: View {
     
     @StateObject private var viewModel = ChannelVideosViewModel()
     @State private var isDescriptionExpanded = false
+    @State private var showingAvatarPreview = false
     
     private var currentChannel: YouTubeChannel {
         viewModel.detailedChannel ?? channel
@@ -88,21 +89,56 @@ struct ChannelVideosView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     // MARK: Avatar and Title
                     HStack(alignment: .bottom, spacing: 16) {
-                        AsyncImage(url: currentChannel.thumbnailURL) { phase in
-                            if let image = phase.image {
-                                image.resizable().scaledToFill()
-                            } else {
-                                Image(systemName: "person.crop.circle.fill")
-                                    .resizable()
-                                    .foregroundStyle(.secondary)
+                        Button {
+                            showingAvatarPreview = true
+                        } label: {
+                            AsyncImage(url: currentChannel.thumbnailURL) { phase in
+                                if let image = phase.image {
+                                    image.resizable().scaledToFill()
+                                } else {
+                                    Image(systemName: "person.crop.circle.fill")
+                                        .resizable()
+                                        .foregroundStyle(.secondary)
+                                }
                             }
+                            .frame(width: 80, height: 80)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 4))
+                            .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 1)
                         }
-                        .frame(width: 80, height: 80)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 4))
-                        .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 1)
+                        .buttonStyle(.plain)
                         .offset(y: currentChannel.bannerURL != nil ? -40 : 0) // Overlap banner if exists
                         .padding(.bottom, currentChannel.bannerURL != nil ? -40 : 0)
+                        .fullScreenCover(isPresented: $showingAvatarPreview) {
+                            NavigationStack {
+                                ZStack {
+                                    Color.black.ignoresSafeArea()
+                                    
+                                    AsyncImage(url: currentChannel.thumbnailURL) { phase in
+                                        if let image = phase.image {
+                                            image.resizable().scaledToFit()
+                                        } else {
+                                            Image(systemName: "person.crop.circle.fill")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .foregroundStyle(.white.opacity(0.5))
+                                                .padding()
+                                        }
+                                    }
+                                }
+                                .toolbar {
+                                    ToolbarItem(placement: .topBarTrailing) {
+                                        Button("Done") {
+                                            showingAvatarPreview = false
+                                        }
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.white)
+                                    }
+                                }
+                                .toolbarBackground(.black, for: .navigationBar)
+                                .toolbarBackground(.visible, for: .navigationBar)
+                            }
+                        }
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(currentChannel.title)
