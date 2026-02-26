@@ -28,6 +28,7 @@ enum AppPreferences {
         static let totalDataBytesUsed = "totalDataBytesUsed"
         static let apiQuotaUsage = "apiQuotaUsage"
         static let apiKeyNames = "apiKeyNames"
+        static let apiQuotaLimits = "apiQuotaLimits"
         static let lastQuotaResetDate = "lastQuotaResetDate"
     }
 
@@ -146,6 +147,21 @@ enum AppPreferences {
         }
     }
 
+    static var apiQuotaLimits: [String: Int] {
+        get {
+            if let data = UserDefaults.standard.data(forKey: Key.apiQuotaLimits),
+               let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
+                return dict
+            }
+            return [:]
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: Key.apiQuotaLimits)
+            }
+        }
+    }
+
     static var lastQuotaResetDate: Date? {
         get { UserDefaults.standard.object(forKey: Key.lastQuotaResetDate) as? Date }
         set { UserDefaults.standard.set(newValue, forKey: Key.lastQuotaResetDate) }
@@ -179,7 +195,8 @@ enum AppPreferences {
 
     static func setApiQuotaExceeded(for key: String) {
         var current = apiQuotaUsage
-        current[key] = 10000
+        let limit = apiQuotaLimits[key] ?? 10000
+        current[key] = limit
         apiQuotaUsage = current
     }
 }

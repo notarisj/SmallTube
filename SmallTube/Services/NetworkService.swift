@@ -105,6 +105,16 @@ struct NetworkService {
         for i in 0..<keys.count {
             let index = (currentIndex + i) % keys.count
             let key = keys[index]
+            
+            let used = AppPreferences.apiQuotaUsage[key] ?? 0
+            let limit = AppPreferences.apiQuotaLimits[key] ?? 10000
+            
+            // If we have other keys, skip this one if it's over the limit.
+            // If all are over, this function will fall through to throwing lastError.
+            if used >= limit {
+                continue
+            }
+
             guard let url = urlBuilder(key) else { continue }
 
             do {
