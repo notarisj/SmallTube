@@ -14,6 +14,7 @@ struct CachedYouTubeVideo: Identifiable, Codable {
     let thumbnailURL: URL
     let publishedAt: Date
     let durationSeconds: Int?
+    let viewCount: Int?
     let channelTitle: String
     let channelId: String
     var channelIconURL: URL?
@@ -29,6 +30,21 @@ struct CachedYouTubeVideo: Identifiable, Codable {
             return String(format: "%d:%02d", m, s)
         }
     }
+    
+    var formattedViewCount: String? {
+        guard let views = viewCount else { return nil }
+        
+        switch views {
+        case ..<1_000:
+            return "\(views)"
+        case 1_000..<1_000_000:
+            return String(format: "%.1fK", Double(views) / 1_000.0).replacingOccurrences(of: ".0K", with: "K")
+        case 1_000_000..<1_000_000_000:
+            return String(format: "%.1fM", Double(views) / 1_000_000.0).replacingOccurrences(of: ".0M", with: "M")
+        default:
+            return String(format: "%.1fB", Double(views) / 1_000_000_000.0).replacingOccurrences(of: ".0B", with: "B")
+        }
+    }
 }
 
 extension CachedYouTubeVideo {
@@ -40,6 +56,7 @@ extension CachedYouTubeVideo {
         self.thumbnailURL = apiVideo.thumbnailURL
         self.publishedAt = apiVideo.publishedAt
         self.durationSeconds = apiVideo.durationSeconds
+        self.viewCount = apiVideo.viewCount
         self.channelTitle = apiVideo.channelTitle
         self.channelId = apiVideo.channelId
         self.channelIconURL = nil

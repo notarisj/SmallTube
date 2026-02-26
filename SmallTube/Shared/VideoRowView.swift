@@ -42,12 +42,19 @@ struct VideoRowView: View {
                         Text(video.publishedAt.relativeShortString)
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
+                        
+                        if let views = video.formattedViewCount {
+                            Spacer(minLength: 8)
+                            Text("\(views) views")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
 
                 Spacer(minLength: 0)
-
-
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)

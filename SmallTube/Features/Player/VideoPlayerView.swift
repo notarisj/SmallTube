@@ -81,9 +81,20 @@ struct VideoPlayerView: View {
                         .lineLimit(2)
                 }
 
-                Text(formattedDate)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(formattedDate)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    
+                    if let views = video.formattedViewCount {
+                        Text("•")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                        Text("\(views) views")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
 
                 Divider()
             }

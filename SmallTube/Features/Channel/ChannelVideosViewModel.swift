@@ -95,7 +95,7 @@ final class ChannelVideosViewModel: ObservableObject {
 
     private func fetchVideoDetails(videoIds: String, channelId: String) async throws -> [CachedYouTubeVideo] {
         let data = try await NetworkService.fetchYouTube { apiKey in
-            URL(string: "https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=\(videoIds)&key=\(apiKey)")
+            URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=\(videoIds)&key=\(apiKey)")
         }
         let videoResponse = try JSONDecoder().decode(VideoListResponse.self, from: data)
         let valid = videoResponse.items.filter { ($0.durationSeconds ?? Int.max) >= 180 }

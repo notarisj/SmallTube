@@ -158,7 +158,7 @@ final class HomeFeedViewModel: ObservableObject {
                 group.addTask {
                     let ids = batch.joined(separator: ",")
                     let data = try await NetworkService.fetchYouTube { apiKey in
-                        URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=\(ids)&key=\(apiKey)")
+                        URL(string: "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=\(ids)&key=\(apiKey)")
                     }
                     let decoded = try JSONDecoder().decode(VideoListResponse.self, from: data)
                     let valid = decoded.items.filter { ($0.durationSeconds ?? Int.max) >= 180 }

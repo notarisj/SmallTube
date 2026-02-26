@@ -12,15 +12,17 @@ struct YouTubeAPIVideo: Decodable {
     let thumbnailURL: URL
     let publishedAt: Date
     let durationSeconds: Int?
+    let viewCount: Int?
     let channelTitle: String
     let channelId: String
 
     enum APIKeys: String, CodingKey {
-        case id, snippet, contentDetails
+        case id, snippet, contentDetails, statistics
     }
     enum IDKeys: String, CodingKey { case videoId }
     enum SnippetKeys: String, CodingKey { case title, description, thumbnails, publishedAt, channelTitle, channelId }
     enum ContentDetailsKeys: String, CodingKey { case duration }
+    enum StatisticsKeys: String, CodingKey { case viewCount }
     enum ThumbnailKeys: String, CodingKey {
         case defaultThumbnail = "default"
         case medium, high, standard, maxres
@@ -76,6 +78,13 @@ struct YouTubeAPIVideo: Decodable {
             self.durationSeconds = YouTubeAPIVideo.parseDuration(durationString)
         } else {
             self.durationSeconds = nil
+        }
+        
+        if let statContainer = try? container.nestedContainer(keyedBy: StatisticsKeys.self, forKey: .statistics),
+           let viewCountStr = try? statContainer.decode(String.self, forKey: .viewCount) {
+            self.viewCount = Int(viewCountStr)
+        } else {
+            self.viewCount = nil
         }
     }
 
